@@ -1,6 +1,8 @@
 # Borland Pascal 7 — Browser Edition
 
-A browser-based recreation of Borland Pascal 7, delivered as a single self-contained HTML file. This project reproduces the classic DOS-era Pascal IDE experience in the browser, including the editor, compiler, runtime environment, and a simplified Windows-like interface.
+A browser-based recreation of Borland Pascal 7, delivered as a single self-contained HTML file. This project reproduces the classic DOS-era Pascal IDE experience in the browser, including the editor, compiler, and runtime environment.
+
+![Borland Pascal 7 — Browser Edition screenshot](./screenshot.png)
 
 ## Overview
 
@@ -54,7 +56,7 @@ This project is best viewed as a browser-hosted demo or emulator rather than a f
 
 ## License
 
-This project does not appear to include an explicit license file. If you plan to redistribute or adapt this code, confirm the repository owner’s licensing intent before publishing or using it beyond personal study.
+This project does not appear to include an explicit license file. If you plan to redistribute or adapt this code, confirm the repository owner’s licensing intent before publishing or using it beyond personal experimentation.
 
 ## Suggested next steps
 
