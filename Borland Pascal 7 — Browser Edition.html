@@ -1,0 +1,2058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Borland Pascal 7 — Browser Edition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{
+  --fs:24px; --lh:20px; --blue:#0000AA; --gray:#AAAAAA; --cyan:#00AAAA; --green:#00AA00; --red:#AA0000; --yellow:#FFFF55;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#000;overflow:hidden}
+body{font-family:'VT323','Lucida Console','Courier New',monospace;font-size:var(--fs);line-height:var(--lh);color:#000;font-variant-ligatures:none;-webkit-text-size-adjust:100%}
+#ide{position:fixed;left:0;right:0;top:env(safe-area-inset-top,0px);bottom:env(safe-area-inset-bottom,0px);display:flex;flex-direction:column;background:var(--blue)}
+.hk{color:var(--red);font-weight:normal}
+/* menu bar */
+#menubar{height:var(--lh);background:var(--gray);display:flex;white-space:pre;position:relative;flex:none;user-select:none;-webkit-user-select:none}
+.mi{padding:0 1.5ch;cursor:default}
+.mi.sel{background:var(--green)}
+#clock{margin-left:auto;padding-right:1ch}
+.dd{position:absolute;z-index:50;background:var(--gray);border:1px solid #000;padding:2px 0;box-shadow:1ch var(--lh) 0 -0px rgba(0,0,0,.55);min-width:26ch;user-select:none;-webkit-user-select:none}
+.dd .row{display:flex;justify-content:space-between;padding:0 1ch 0 2.5ch;white-space:pre;position:relative;cursor:default}
+.dd .row .ck{position:absolute;left:.8ch}
+.dd .row.sel{background:var(--green)}
+.dd .row.off{color:#555}
+.dd .row.off .hk{color:#555}
+.dd .sep{height:var(--lh);position:relative}
+.dd .sep:before{content:"";position:absolute;left:0;right:0;top:50%;border-top:1px solid #000}
+.dd .kb{margin-left:3ch}
+#errbar{position:absolute;left:0;right:0;top:0;height:var(--lh);background:var(--red);color:#fff;z-index:60;padding:0 1ch;display:none;white-space:pre}
+/* desk and window */
+#desk{position:relative;flex:1;min-height:0;padding:calc(var(--lh)/2) 0;background:var(--blue)}
+#win{position:absolute;left:0;right:0;top:calc(var(--lh)/2);bottom:calc(var(--lh)/2);border:5px double #fff;background:var(--blue)}
+.lab{position:absolute;z-index:5;background:var(--blue);color:#fff;white-space:pre;line-height:var(--lh)}
+#wtitle{top:calc(-2.5px - var(--lh)/2);left:50%;transform:translateX(-50%);padding:0 1ch;cursor:default}
+#wclose{top:calc(-2.5px - var(--lh)/2);left:2ch;color:#55FF55;cursor:pointer}
+#wnum{top:calc(-2.5px - var(--lh)/2);right:6ch}
+#wzoom{top:calc(-2.5px - var(--lh)/2);right:2ch;color:#55FF55}
+#wpos{bottom:calc(-2.5px - var(--lh)/2);left:2ch;padding:0 1ch}
+#editwrap{position:absolute;left:0;top:0;right:1ch;bottom:var(--lh);overflow:hidden;background:var(--blue)}
+#ta,#hl{position:absolute;left:0;top:0;margin:0;border:0;padding:0 0 0 1ch;font:inherit;line-height:var(--lh);white-space:pre;tab-size:2;-moz-tab-size:2;letter-spacing:0;font-variant-ligatures:none}
+#ta{width:100%;height:100%;resize:none;outline:none;background:transparent;color:transparent;caret-color:var(--yellow);caret-shape:underscore;overflow:auto;scrollbar-width:none;-webkit-text-size-adjust:100%}
+#ta::-webkit-scrollbar{display:none}
+#ta::selection{background:var(--cyan);color:transparent}
+#hl{pointer-events:none;color:var(--yellow);overflow:visible;width:max-content;min-width:100%}
+#hl .k{color:#fff}#hl .c{color:#AAAAAA}#hl .s{color:#55FF55}#hl .n{color:#55FFFF}
+#hl.plain .k,#hl.plain .c,#hl.plain .s,#hl.plain .n{color:var(--yellow)}
+.sb{position:absolute;background:var(--cyan);overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:none}
+#vs{right:0;top:0;bottom:var(--lh);width:1ch}
+#hs{left:0;right:1ch;bottom:0;height:var(--lh)}
+#corner{right:0;bottom:0;width:1ch;height:var(--lh);background:var(--gray)}
+.sb .ar{position:absolute;background:var(--gray);color:#000;text-align:center;line-height:var(--lh);height:var(--lh);width:1ch;cursor:pointer}
+#vs .ar.u{top:0}#vs .ar.d{bottom:0}#hs .ar{top:0}#hs .ar.l{left:0}#hs .ar.r{right:0}
+.sb .tr{position:absolute;background:repeating-conic-gradient(#0000AA 0 25%,#00AAAA 0 50%) 0 0/2px 2px}
+#vs .tr{left:0;right:0;top:var(--lh);bottom:var(--lh)}
+#hs .tr{top:0;bottom:0;left:1ch;right:1ch}
+.sb .th{position:absolute;background:#000;cursor:grab}
+#vs .th{left:0;right:0}#hs .th{top:0;bottom:0}
+/* status bar */
+#status{height:var(--lh);background:var(--gray);display:flex;white-space:pre;overflow-x:auto;overflow-y:hidden;flex:none;scrollbar-width:none;user-select:none;-webkit-user-select:none}
+#status::-webkit-scrollbar{display:none}
+#status span{padding:0 1.5ch;cursor:pointer;flex:none}
+#status span:hover{background:var(--green)}
+/* user screen */
+#user{position:fixed;inset:0;background:#000;display:none;flex-direction:column;z-index:100}
+#uwrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#screen{display:block;background:#000}
+#ufoot{flex:none;display:flex;gap:1ch;align-items:center;padding:0 1ch;height:calc(var(--lh)*1.2);background:#111;color:#AAAAAA;white-space:pre;padding-bottom:env(safe-area-inset-bottom,0px)}
+#ufoot b{font-weight:normal;color:#fff}
+#ufoot button{font:inherit;background:var(--green);color:#000;border:0;padding:0 1.5ch;cursor:pointer;line-height:inherit}
+#kb{position:absolute;left:-1000px;top:0;width:10px;height:10px;opacity:0}
+/* dialogs */
+.ovl{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.001)}
+.dlg{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);background:var(--gray);border:5px double #fff;padding:calc(var(--lh)*.6) 2ch calc(var(--lh)*.5);box-shadow:1ch var(--lh) 0 rgba(0,0,0,.55);max-width:calc(100vw - 2ch);max-height:92%;display:flex;flex-direction:column}
+.dttl{position:absolute;top:calc(-2.5px - var(--lh)/2 - 5px);left:50%;transform:translateX(-50%);background:var(--gray);padding:0 1ch;white-space:pre;color:#000}
+.dbody{white-space:pre-wrap;overflow:auto;min-height:0}
+.dbody.pre{white-space:pre}
+.dbtns{display:flex;gap:2ch;justify-content:center;margin-top:calc(var(--lh)*.7);flex-wrap:wrap}
+.btn{font:inherit;line-height:var(--lh);background:var(--green);color:#000;border:0;padding:0 2ch;cursor:pointer;box-shadow:1px 1px 0 #000;min-width:10ch}
+.btn.def{color:#fff}.btn:focus{outline:2px solid #fff;outline-offset:1px}
+.dlg input[type=text]{font:inherit;line-height:var(--lh);width:100%;background:var(--blue);color:#fff;border:0;outline:0;padding:0 1ch;caret-color:var(--yellow)}
+.dlg label{display:block;white-space:pre}
+.flist{height:calc(var(--lh)*8);overflow:auto;background:#fff;color:#000;margin-top:calc(var(--lh)*.4);border:1px solid #000}
+.flist div{padding:0 1ch;white-space:pre;cursor:pointer;display:flex;justify-content:space-between;gap:2ch}
+.flist div.sel{background:var(--cyan)}
+.flist div i{font-style:normal;color:#555}
+.kv{white-space:pre}
+.kv.ok{color:#000}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div id="ide">
+  <div id="menubar"></div>
+  <div id="errbar"></div>
+  <div id="desk">
+    <div id="win">
+      <div id="editwrap"><textarea id="ta" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" aria-label="Pascal source editor"></textarea><pre id="hl" aria-hidden="true"></pre></div>
+      <div id="vs" class="sb"><div class="ar u">↑</div><div class="tr"><div class="th"></div></div><div class="ar d">↓</div></div>
+      <div id="hs" class="sb"><div class="ar l">◄</div><div class="tr"><div class="th"></div></div><div class="ar r">►</div></div>
+      <div id="corner" class="sb"></div>
+      <span id="wclose" class="lab" title="Close (new file)">[■]</span>
+      <span id="wtitle" class="lab">NONAME00.PAS</span>
+      <span id="wnum" class="lab">1</span>
+      <span id="wzoom" class="lab">[↑]</span>
+      <span id="wpos" class="lab">1:1</span>
+    </div>
+  </div>
+  <div id="status"></div>
+</div>
+<div id="user">
+  <div id="uwrap"><canvas id="screen"></canvas></div>
+  <div id="ufoot"></div>
+  <input id="kb" type="text" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Keyboard input">
+</div>
+<div id="dlgroot"></div>
+
+<script>
+/* ===== Pascal compiler + stack VM (no eval, no DOM) ===== */
+(function (G) {
+'use strict';
+
+/* ---------- CP437 mapping ---------- */
+const CP_LOW = ' ☺☻♥♦♣♠•◘○◙♂♀♪♫☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼';
+const CP_HIGH = ['ÇüéâäàåçêëèïîìÄÅ', 'ÉæÆôöòûùÿÖÜ¢£¥₧ƒ', 'áíóúñÑªº¿⌐¬½¼¡«»', '░▒▓│┤╡╢╖╕╣║╗╝╜╛┐',
+  '└┴┬├─┼╞╟╚╔╩╦╠═╬╧', '╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀', 'αßΓπΣσµτΦΘΩδ∞φε∩', '≡±≥≤⌠⌡÷≈°∙·√ⁿ²■\u00a0'].join('');
+const CP = [];
+for (let i = 0; i < 32; i++) CP[i] = CP_LOW[i];
+for (let i = 32; i < 127; i++) CP[i] = String.fromCharCode(i);
+CP[127] = '⌂';
+for (let i = 128; i < 256; i++) CP[i] = CP_HIGH[i - 128];
+const REV = new Map();
+for (let i = 1; i < 256; i++) { if (i >= 32 && i < 127) continue; if (!REV.has(CP[i])) REV.set(CP[i], i); }
+function _chr(n) {
+  n = n & 255;
+  if (n === 0 || n === 7 || n === 8 || n === 9 || n === 10 || n === 13) return String.fromCharCode(n);
+  return CP[n];
+}
+function _ord(c) { const k = REV.get(c); return k !== undefined ? k : c.charCodeAt(0); }
+function toCode(ch) { const k = REV.get(ch); if (k !== undefined) return k; const c = ch.charCodeAt(0); return c < 128 ? c : 63; }
+
+/* ---------- errors ---------- */
+class PErr extends Error { constructor(code, msg, line, col) { super(msg); this.code = code; this.line = line; this.col = col; } }
+class RTE extends Error { constructor(code) { super('Runtime error ' + code); this.code = code; } }
+const RTE_MSG = { 2: 'File not found', 3: 'Path not found', 100: 'Disk read error', 106: 'Invalid numeric format', 200: 'Division by zero',
+  201: 'Range check error', 202: 'Stack overflow error', 203: 'Heap overflow error', 204: 'Invalid pointer operation',
+  207: 'Invalid floating point operation', 216: 'General protection fault' };
+
+/* ---------- lexer ---------- */
+const KW = new Set(['and', 'array', 'begin', 'case', 'const', 'div', 'do', 'downto', 'else', 'end', 'file', 'for', 'function', 'goto', 'if', 'in',
+  'label', 'mod', 'nil', 'not', 'of', 'or', 'packed', 'procedure', 'program', 'record', 'repeat', 'set', 'shl', 'shr', 'string', 'then', 'to',
+  'type', 'until', 'uses', 'var', 'while', 'with', 'xor', 'unit', 'interface', 'implementation', 'object', 'inherited', 'constructor',
+  'destructor', 'inline', 'asm']);
+
+function lex(src) {
+  const T = []; let i = 0, line = 1, ls = 0; const n = src.length;
+  const err = (code, msg) => { throw new PErr(code, msg, line, i - ls + 1); };
+  const push = (t, v, sp, l, c) => T.push({ t, v, lc: t === 'id' ? v.toLowerCase() : v, pos: sp, line: l, col: c });
+  const isL = c => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '_';
+  const isD = c => c >= '0' && c <= '9';
+  const isH = c => isD(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+  while (i < n) {
+    const c = src[i];
+    if (c === '\n') { line++; i++; ls = i; continue; }
+    if (c <= ' ') { i++; continue; }
+    const sl = line, sc = i - ls + 1, sp = i;
+    if (c === '{' || (c === '(' && src[i + 1] === '*')) {
+      const close = c === '{' ? '}' : '*)';
+      let j = src.indexOf(close, i + (c === '{' ? 1 : 2));
+      if (j < 0) { err(10, 'Unexpected end of file'); }
+      for (let k = i; k < j; k++) if (src[k] === '\n') { line++; ls = k + 1; }
+      i = j + close.length; continue;
+    }
+    if (c === '/' && src[i + 1] === '/') { while (i < n && src[i] !== '\n') i++; continue; }
+    if (isL(c)) { let j = i + 1; while (j < n && (isL(src[j]) || isD(src[j]))) j++; push('id', src.slice(i, j), sp, sl, sc); i = j; continue; }
+    if (isD(c) || (c === '$' && isH(src[i + 1] || ''))) {
+      if (c === '$') { let j = i + 1; while (j < n && isH(src[j])) j++; push('int', parseInt(src.slice(i + 1, j), 16), sp, sl, sc); i = j; continue; }
+      let j = i; while (j < n && isD(src[j])) j++;
+      let real = false;
+      if (src[j] === '.' && isD(src[j + 1] || '')) { real = true; j++; while (j < n && isD(src[j])) j++; }
+      if ((src[j] === 'e' || src[j] === 'E') && (isD(src[j + 1] || '') || ((src[j + 1] === '+' || src[j + 1] === '-') && isD(src[j + 2] || '')))) {
+        real = true; j += 2; while (j < n && isD(src[j])) j++;
+      }
+      const txt = src.slice(i, j);
+      push(real ? 'real' : 'int', real ? parseFloat(txt) : parseInt(txt, 10), sp, sl, sc); i = j; continue;
+    }
+    if (c === "'" || c === '#') {
+      let s = '';
+      for (;;) {
+        if (src[i] === "'") {
+          i++;
+          for (;;) {
+            if (i >= n || src[i] === '\n') err(8, 'String constant exceeds line');
+            if (src[i] === "'") { if (src[i + 1] === "'") { s += "'"; i += 2; continue; } i++; break; }
+            s += src[i++];
+          }
+        } else if (src[i] === '#') {
+          i++; let j = i, code;
+          if (src[j] === '$') { j++; while (j < n && isH(src[j])) j++; code = parseInt(src.slice(i + 1, j), 16); }
+          else { while (j < n && isD(src[j])) j++; code = parseInt(src.slice(i, j), 10); }
+          if (isNaN(code)) err(7, 'Error in integer constant');
+          s += _chr(code); i = j;
+        } else break;
+      }
+      push('str', s, sp, sl, sc); continue;
+    }
+    const two = src.substr(i, 2);
+    if (two === ':=' || two === '<>' || two === '<=' || two === '>=' || two === '..') { push('sym', two, sp, sl, sc); i += 2; continue; }
+    if ('+-*/=<>()[],;:.^@'.indexOf(c) >= 0) { push('sym', c, sp, sl, sc); i++; continue; }
+    err(5, 'Syntax error');
+  }
+  push('eof', '', n, line, i - ls + 1);
+  return T;
+}
+
+/* ---------- types ---------- */
+const T = {
+  int: { k: 'int', lo: -32768, hi: 32767, nm: 'integer' },
+  longint: { k: 'int', lo: -2147483648, hi: 2147483647, nm: 'longint' },
+  byte: { k: 'int', lo: 0, hi: 255, nm: 'byte' },
+  word: { k: 'int', lo: 0, hi: 65535, nm: 'word' },
+  shortint: { k: 'int', lo: -128, hi: 127, nm: 'shortint' },
+  real: { k: 'real', nm: 'real' },
+  bool: { k: 'bool', lo: 0, hi: 1, nm: 'boolean' },
+  char: { k: 'char', lo: 0, hi: 255, nm: 'char' },
+  str: { k: 'str', nm: 'string' },
+  nil: { k: 'nil' }
+};
+const isOrd = t => t.k === 'int' || t.k === 'bool' || t.k === 'char' || t.k === 'enum';
+const isNum = t => t.k === 'int' || t.k === 'real';
+const isStrLike = t => t.k === 'str' || t.k === 'char';
+function ptrTo(t) {
+  if (t.to) return t.to;
+  const s = t.scope; let f = null;
+  for (let sc = s; sc && !f; sc = sc.parent) f = sc.syms.get(t.toName);
+  if (!f || f.kind !== 'type') throw new PErr(3, 'Unknown identifier', 0, 0);
+  t.to = f.type; return t.to;
+}
+function compat(d, s) {
+  if (d === s) return true;
+  switch (d.k) {
+    case 'real': return s.k === 'real' || s.k === 'int';
+    case 'int': return s.k === 'int';
+    case 'bool': return s.k === 'bool';
+    case 'char': return s.k === 'char';
+    case 'str': return s.k === 'str' || s.k === 'char';
+    case 'enum': return s.k === 'enum' && d.names === s.names;
+    case 'ptr': return s.k === 'nil' || (s.k === 'ptr' && (s === d || ptrTo(d) === ptrTo(s)));
+    case 'arr': return s.k === 'arr' && d.n === s.n && compat(d.el, s.el) && compat(s.el, d.el);
+    case 'rec': return s.k === 'rec' && s.fields === d.fields;
+    case 'set': return s.k === 'set' && (!s.base || !d.base || s.base.k === d.base.k);
+  }
+  return false;
+}
+function mkOf(t) {
+  if (t.mk) return t.mk;
+  let f;
+  switch (t.k) {
+    case 'int': case 'real': case 'enum': f = () => 0; break;
+    case 'bool': f = () => false; break;
+    case 'char': f = () => '\u0000'; break;
+    case 'str': f = () => ''; break;
+    case 'ptr': case 'nil': f = () => null; break;
+    case 'set': f = () => new Set(); break;
+    case 'arr': {
+      const m = mkOf(t.el), n = t.n;
+      const prim = ['int', 'real', 'enum', 'bool', 'char', 'str', 'ptr'].indexOf(t.el.k) >= 0;
+      if (prim) { const d = m(); f = () => new Array(n).fill(d); }
+      else f = () => { const a = new Array(n); for (let i = 0; i < n; i++) a[i] = m(); return a; };
+      break;
+    }
+    case 'rec': {
+      const fs = [...t.fields].map(([k, ft]) => [k, mkOf(ft)]);
+      f = () => { const o = {}; for (let i = 0; i < fs.length; i++) o[fs[i][0]] = fs[i][1](); return o; };
+      break;
+    }
+    default: f = () => 0;
+  }
+  t.mk = f; return f;
+}
+function cloneOf(t) {
+  if (t.cl !== undefined) return t.cl;
+  let f = null;
+  if (t.k === 'arr') { const ce = cloneOf(t.el); f = ce ? a => a.map(ce) : a => a.slice(); }
+  else if (t.k === 'rec') {
+    const fs = [...t.fields].map(([k, ft]) => [k, cloneOf(ft)]);
+    f = o => { const r = {}; for (let i = 0; i < fs.length; i++) { const k = fs[i][0], c = fs[i][1]; r[k] = c ? c(o[k]) : o[k]; } return r; };
+  } else if (t.k === 'set') f = s => new Set(s);
+  t.cl = f; return f;
+}
+
+/* ---------- number formatting ---------- */
+function fmtReal(x, w, d) {
+  let s;
+  if (d !== undefined) s = x.toFixed(Math.max(0, Math.min(d, 20)));
+  else { s = x.toExponential(10).replace(/e([+-])(\d)$/, 'e$10$2').toUpperCase(); if (x >= 0) s = ' ' + s; }
+  return w ? s.padStart(w) : s;
+}
+function fmt(kind, v, w, d) {
+  let s;
+  switch (kind) {
+    case 'i': s = String(v); break;
+    case 'r': return fmtReal(v, w, d);
+    case 'b': s = v ? 'TRUE' : 'FALSE'; break;
+    default: s = String(v);
+  }
+  return w ? s.padStart(w) : s;
+}
+const _round = x => (x < 0 ? -Math.round(-x) : Math.round(x));
+
+/* ---------- VM instruction handlers ---------- */
+const H = {
+  PUSHK(v, i) { v.st.push(i.a); },
+  POP(v) { v.st.pop(); },
+  DUP(v) { const s = v.st; s.push(s[s.length - 1]); },
+  DUP2(v) { const s = v.st, n = s.length; s.push(s[n - 2], s[n - 1]); },
+  LDL(v, i) { v.st.push(v.f.l[i.a]); },
+  LDG(v, i) { v.st.push(v.g[i.a]); },
+  LDV(v, i) { let f = v.f; for (let d = i.a; d > 0; d--) f = f.sl; v.st.push(f.l[i.b]); },
+  STL(v, i) { v.f.l[i.a] = v.st.pop(); },
+  STG(v, i) { v.g[i.a] = v.st.pop(); },
+  STV(v, i) { let f = v.f; for (let d = i.a; d > 0; d--) f = f.sl; f.l[i.b] = v.st.pop(); },
+  ADDRL(v, i) { v.st.push({ c: v.f.l, k: i.a }); },
+  ADDRG(v, i) { v.st.push({ c: v.g, k: i.a }); },
+  ADDRV(v, i) { let f = v.f; for (let d = i.a; d > 0; d--) f = f.sl; v.st.push({ c: f.l, k: i.b }); },
+  LDIND(v) { const r = v.st.pop(); if (r == null) throw new RTE(216); v.st.push(r.c[r.k]); },
+  STIND(v) { const s = v.st, x = s.pop(), r = s.pop(); if (r == null) throw new RTE(216); r.c[r.k] = x; },
+  STINDR(v) { const s = v.st, r = s.pop(), x = s.pop(); r.c[r.k] = x; },
+  FLD(v, i) { const s = v.st; s.push(s.pop()[i.a]); },
+  STFLD(v, i) { const s = v.st, x = s.pop(), o = s.pop(); o[i.a] = x; },
+  IDX(v, i) { const s = v.st, ix = s.pop() - i.a, a = s.pop(); if (ix < 0 || ix >= a.length) throw new RTE(201); s.push(a[ix]); },
+  STIDX(v, i) { const s = v.st, x = s.pop(), ix = s.pop() - i.a, a = s.pop(); if (ix < 0 || ix >= a.length) throw new RTE(201); a[ix] = x; },
+  ADDRFLD(v, i) { const s = v.st; s.push({ c: s.pop(), k: i.a }); },
+  ADDRIDX(v, i) { const s = v.st, ix = s.pop() - i.a, a = s.pop(); if (ix < 0 || ix >= a.length) throw new RTE(201); s.push({ c: a, k: ix }); },
+  SCHAR(v) { const s = v.st, ix = s.pop(), str = s.pop(); s.push(ix >= 1 && ix <= str.length ? str[ix - 1] : '\u0000'); },
+  SSET(v) { const s = v.st, c = s.pop(), ix = s.pop(); let str = s.pop(); if (ix < 1 || ix > 255) throw new RTE(201); if (str.length < ix) str = str.padEnd(ix, ' '); s.push(str.slice(0, ix - 1) + c + str.slice(ix)); },
+  ADD(v) { const s = v.st, b = s.pop(); s[s.length - 1] += b; },
+  SUB(v) { const s = v.st, b = s.pop(); s[s.length - 1] -= b; },
+  MUL(v) { const s = v.st, b = s.pop(); s[s.length - 1] *= b; },
+  DIVR(v) { const s = v.st, b = s.pop(); if (b === 0) throw new RTE(200); s[s.length - 1] /= b; },
+  IDIV(v) { const s = v.st, b = s.pop(); if (b === 0) throw new RTE(200); s[s.length - 1] = Math.trunc(s[s.length - 1] / b); },
+  MOD(v) { const s = v.st, b = s.pop(); if (b === 0) throw new RTE(200); s[s.length - 1] %= b; },
+  NEG(v) { const s = v.st; s[s.length - 1] = -s[s.length - 1]; },
+  NOT(v) { const s = v.st; s[s.length - 1] = !s[s.length - 1]; },
+  NOTI(v) { const s = v.st; s[s.length - 1] = ~s[s.length - 1]; },
+  ANDI(v) { const s = v.st, b = s.pop(); s[s.length - 1] &= b; },
+  ORI(v) { const s = v.st, b = s.pop(); s[s.length - 1] |= b; },
+  XORI(v) { const s = v.st, b = s.pop(); s[s.length - 1] ^= b; },
+  XORB(v) { const s = v.st, b = s.pop(); s[s.length - 1] = s[s.length - 1] !== b; },
+  SHL(v) { const s = v.st, b = s.pop(); s[s.length - 1] <<= b; },
+  SHR(v) { const s = v.st, b = s.pop(); s[s.length - 1] >>>= b; },
+  EQ(v) { const s = v.st, b = s.pop(); s[s.length - 1] = s[s.length - 1] === b; },
+  NE(v) { const s = v.st, b = s.pop(); s[s.length - 1] = s[s.length - 1] !== b; },
+  LT(v) { const s = v.st, b = s.pop(); s[s.length - 1] = s[s.length - 1] < b; },
+  GT(v) { const s = v.st, b = s.pop(); s[s.length - 1] = s[s.length - 1] > b; },
+  LE(v) { const s = v.st, b = s.pop(); s[s.length - 1] = s[s.length - 1] <= b; },
+  GE(v) { const s = v.st, b = s.pop(); s[s.length - 1] = s[s.length - 1] >= b; },
+  JMP(v, i) { v.pc += i.a; },
+  JF(v, i) { if (!v.st.pop()) v.pc += i.a; },
+  JT(v, i) { if (v.st.pop()) v.pc += i.a; },
+  JFK(v, i) { const s = v.st; if (!s[s.length - 1]) v.pc += i.a; else s.pop(); },
+  JTK(v, i) { const s = v.st; if (s[s.length - 1]) v.pc += i.a; else s.pop(); },
+  CALL(v, i) {
+    const r = i.a;
+    if (v.cs.length > 12000) throw new RTE(202);
+    let sl = v.f; for (let h = i.b; h > 0; h--) sl = sl.sl;
+    const l = new Array(r.nl), s = v.st;
+    for (let k = r.np - 1; k >= 0; k--) l[k] = s.pop();
+    const inits = r.inits;
+    for (let k = 0; k < inits.length; k++) l[inits[k].slot] = inits[k].mk();
+    v.cs.push({ code: v.code, pc: v.pc, f: v.f, r: v.curR });
+    v.f = { l, sl }; v.code = r.code; v.pc = 0; v.curR = r;
+  },
+  RET(v) {
+    const r = v.curR;
+    if (r.ret) v.st.push(v.f.l[r.rs]);
+    const fr = v.cs.pop();
+    v.code = fr.code; v.pc = fr.pc; v.f = fr.f; v.curR = fr.r;
+  },
+  HALT() { return 'done'; },
+  CLONE(v, i) { const s = v.st; s[s.length - 1] = i.a(s[s.length - 1]); },
+  F0(v, i) { v.st.push(i.a()); },
+  F1(v, i) { const s = v.st; s[s.length - 1] = i.a(s[s.length - 1]); },
+  F2(v, i) { const s = v.st, b = s.pop(); s[s.length - 1] = i.a(s[s.length - 1], b); },
+  F3(v, i) { const s = v.st, c = s.pop(), b = s.pop(); s[s.length - 1] = i.a(s[s.length - 1], b, c); },
+  NEWSET(v) { v.st.push(new Set()); },
+  SETADD(v) { const s = v.st, x = s.pop(); s[s.length - 1].add(x); },
+  SETADDR(v) { const s = v.st, hi = s.pop(), lo = s.pop(), st = s[s.length - 1]; for (let k = lo; k <= hi; k++) st.add(k); },
+  SETIN(v) { const s = v.st, st = s.pop(), x = s.pop(); s.push(st.has(x)); },
+  SETU(v) { const s = v.st, b = s.pop(), a = s.pop(); s.push(new Set([...a, ...b])); },
+  SETD(v) { const s = v.st, b = s.pop(), a = s.pop(); s.push(new Set([...a].filter(x => !b.has(x)))); },
+  SETI(v) { const s = v.st, b = s.pop(), a = s.pop(); s.push(new Set([...a].filter(x => b.has(x)))); },
+  SEQ(v) { const s = v.st, b = s.pop(), a = s.pop(); s.push(a.size === b.size && [...a].every(x => b.has(x))); },
+  SNE(v) { const s = v.st, b = s.pop(), a = s.pop(); s.push(!(a.size === b.size && [...a].every(x => b.has(x)))); },
+  SLE(v) { const s = v.st, b = s.pop(), a = s.pop(); s.push([...a].every(x => b.has(x))); },
+  SGE(v) { const s = v.st, b = s.pop(), a = s.pop(); s.push([...b].every(x => a.has(x))); },
+  SETINC(v) { const s = v.st, x = s.pop(), r = s.pop(); r.c[r.k].add(x); },
+  SETEXC(v) { const s = v.st, x = s.pop(), r = s.pop(); r.c[r.k].delete(x); },
+  INC(v) { const s = v.st, n = s.pop(), r = s.pop(); r.c[r.k] += n; },
+  INCC(v) { const s = v.st, n = s.pop(), r = s.pop(); r.c[r.k] = _chr(_ord(r.c[r.k]) + n); },
+  NEWP(v, i) { const r = v.st.pop(); r.c[r.k] = { c: [i.a()], k: 0 }; },
+  WV(v, i) {
+    const s = v.st; let d, w;
+    if (i.b & 2) d = s.pop();
+    if (i.b & 1) w = s.pop();
+    v.host.write(fmt(i.a, s.pop(), w, d));
+  },
+  FMTV(v, i) {
+    const s = v.st; let d, w;
+    if (i.b & 2) d = s.pop();
+    if (i.b & 1) w = s.pop();
+    s.push(fmt(i.a, s.pop(), w, d));
+  },
+  WLN(v) { v.host.write('\r\n'); },
+  READ(v, i) {
+    const r = v.host.readValue(i.a);
+    if (r && typeof r.then === 'function') { v.blocker = { p: r, push: true }; return 'wait'; }
+    v.st.push(r);
+  },
+  RLN(v) {
+    const r = v.host.readln();
+    if (r && typeof r.then === 'function') { v.blocker = { p: r, push: false }; return 'wait'; }
+  },
+  HOSTF(v, i) {
+    const s = v.st, n = i.b;
+    const args = n ? s.splice(s.length - n, n) : [];
+    const r = v.host[i.a](...args);
+    if (r && typeof r.then === 'function') { v.blocker = { p: r, push: !!i.c }; return 'wait'; }
+    if (i.c) s.push(r);
+  },
+  VAL(v, i) {
+    const s = v.st, cr = s.pop(), xr = s.pop(), str = s.pop().trim();
+    const re = i.a === 'i' ? /^[+-]?\d+$/ : /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
+    if (/^\$[0-9a-fA-F]+$/.test(str) && i.a === 'i') { xr.c[xr.k] = parseInt(str.slice(1), 16); cr.c[cr.k] = 0; }
+    else if (re.test(str)) { xr.c[xr.k] = Number(str); cr.c[cr.k] = 0; }
+    else { cr.c[cr.k] = Math.max(1, str.search(/[^\d+\-]/) + 1); if (i.a === 'r') cr.c[cr.k] = 1; xr.c[xr.k] = 0; }
+  },
+  DELSTR(v) { const s = v.st, n = s.pop(), p = s.pop(), r = s.pop(); const t = r.c[r.k]; if (p >= 1 && n > 0) r.c[r.k] = t.slice(0, p - 1) + t.slice(p - 1 + n); },
+  INSSTR(v) { const s = v.st, p = s.pop(), r = s.pop(), src = s.pop(); const t = r.c[r.k]; const q = Math.max(1, Math.min(p, t.length + 1)); r.c[r.k] = t.slice(0, q - 1) + src + t.slice(q - 1); }
+};
+
+/* ---------- VM ---------- */
+class VM {
+  constructor(prog, host) {
+    this.host = host || {}; this.st = []; this.cs = [];
+    const m = prog.main; this.curR = m;
+    const l = new Array(m.nl); for (const n of m.inits) l[n.slot] = n.mk();
+    this.f = { l, sl: null }; this.g = l; this.code = m.code; this.pc = 0;
+    this.blocker = null; this.aborted = false;
+    this.abortP = new Promise(r => { this._abortRes = r; });
+  }
+  abort() { this.aborted = true; this._abortRes(); }
+  line() { const i = this.code[this.pc - 1]; return i ? i.ln : 0; }
+  run(ms) {
+    const dl = (typeof performance !== 'undefined' ? performance.now() : Date.now()) + ms; let n = 0;
+    const code = () => this.code;
+    for (;;) {
+      const i = this.code[this.pc++];
+      const r = i.f(this, i);
+      if (r !== undefined) return r;
+      if ((++n & 2047) === 0 && (typeof performance !== 'undefined' ? performance.now() : Date.now()) > dl) return 'yield';
+    }
+  }
+  async exec(tick) {
+    for (;;) {
+      let r;
+      try { r = this.run(12); }
+      catch (e) {
+        if (e instanceof RTE) return { rte: e.code, line: this.line() };
+        if (e instanceof TypeError) return { rte: 216, line: this.line() };
+        if (e instanceof RangeError) return { rte: 202, line: this.line() };
+        throw e;
+      }
+      if (r === 'done') return { ok: true };
+      if (this.aborted) return { aborted: true };
+      if (r === 'yield') { await tick(); if (this.aborted) return { aborted: true }; continue; }
+      if (r === 'wait') {
+        const b = this.blocker; this.blocker = null;
+        let val; try { val = await Promise.race([b.p, this.abortP]); } catch (e) { if (e instanceof RTE) return { rte: e.code, line: this.line() }; throw e; }
+        if (this.aborted) return { aborted: true };
+        if (b.push) this.st.push(val);
+      }
+    }
+  }
+}
+
+/* ---------- compiler ---------- */
+const MSG = { ';': 85, ':': 86, ',': 87, '(': 88, ')': 89, '=': 90, ':=': 91, '[': 92, ']': 93, '.': 94, '..': 95 };
+const REL = new Set(['=', '<>', '<', '>', '<=', '>=']);
+
+class Compiler {
+  constructor(src) {
+    this.toks = lex(src); this.p = 0; this.tok = this.toks[0];
+    this.main = { name: 'main', level: 0, np: 0, nl: 0, inits: [], code: [], ret: null, parent: null };
+    this.R = this.main; this.code = this.main.code;
+    this.root = { parent: null, syms: new Map() };
+    this.scope = this.root;
+    this.loops = []; this.withs = []; this.constMode = false; this.pendPtr = []; this.curLine = 1;
+    const R = this.root.syms;
+    const ty = (n, t) => R.set(n, { kind: 'type', type: t });
+    ty('integer', T.int); ty('longint', T.longint); ty('byte', T.byte); ty('word', T.word); ty('shortint', T.shortint);
+    ty('real', T.real); ty('single', T.real); ty('double', T.real); ty('extended', T.real); ty('comp', T.real);
+    ty('boolean', T.bool); ty('char', T.char);
+    R.set('true', { kind: 'const', v: true, type: T.bool }); R.set('false', { kind: 'const', v: false, type: T.bool });
+    R.set('maxint', { kind: 'const', v: 32767, type: T.int }); R.set('maxlongint', { kind: 'const', v: 2147483647, type: T.longint });
+    const cc = { black: 0, blue: 1, green: 2, cyan: 3, red: 4, magenta: 5, brown: 6, lightgray: 7, darkgray: 8, lightblue: 9, lightgreen: 10, lightcyan: 11, lightred: 12, lightmagenta: 13, yellow: 14, white: 15, blink: 128 };
+    for (const k in cc) R.set(k, { kind: 'const', v: cc[k], type: T.byte });
+    this.scope = { parent: this.root, syms: new Map() };
+  }
+  next() { this.p++; this.tok = this.toks[this.p]; }
+  peek() { return this.toks[this.p + 1]; }
+  err(code, msg, tok) { tok = tok || this.tok; throw new PErr(code, msg, tok.line, tok.col); }
+  isSym(s) { return this.tok.t === 'sym' && this.tok.v === s; }
+  isKw(k) { return this.tok.t === 'id' && this.tok.lc === k; }
+  acceptSym(s) { if (this.isSym(s)) { this.next(); return true; } return false; }
+  expectSym(s, code) { if (!this.isSym(s)) this.err(code || MSG[s] || 5, (code || MSG[s]) ? `"${s}" expected` : 'Syntax error'); this.next(); }
+  expectKw(k) {
+    if (!this.isKw(k)) {
+      const m = { begin: [36, 'BEGIN expected'], end: [37, 'END expected'], then: [5, '"THEN" expected'], do: [5, '"DO" expected'], of: [5, '"OF" expected'], to: [5, '"TO" or "DOWNTO" expected'], until: [5, '"UNTIL" expected'] }[k] || [5, 'Syntax error'];
+      this.err(m[0], m[1]);
+    }
+    this.next();
+  }
+  ident() { if (this.tok.t !== 'id' || KW.has(this.tok.lc)) this.err(2, 'Identifier expected'); const n = this.tok.v; this.next(); return n; }
+  lookup(lc) { for (let s = this.scope; s; s = s.parent) { const v = s.syms.get(lc); if (v) return v; } return null; }
+  declare(name, sym, tok) { const lc = name.toLowerCase(); if (this.scope.syms.has(lc)) this.err(4, 'Duplicate identifier', tok); this.scope.syms.set(lc, sym); }
+  emit(name, a, b, c) {
+    const f = H[name]; if (!f) throw new Error('bad op ' + name);
+    this.code.push({ f, a, b, c, ln: this.curLine }); return this.code.length - 1;
+  }
+  patch(ix) { this.code[ix].a = this.code.length - (ix + 1); }
+  patchAll(l) { for (const ix of l) this.patch(ix); }
+  jumpBack(name, target) { const at = this.code.length; this.emit(name, target - (at + 1)); }
+  capture(fn) { const save = this.code; this.code = []; try { fn(); const c = this.code; return c; } finally { this.code = save; } }
+  newSlot(type) { const s = { kind: 'var', type, level: this.R.level, slot: this.R.nl++ }; return s; }
+
+  /* variables */
+  loadVar(s) { if (s.level === 0) this.emit('LDG', s.slot); else if (s.level === this.R.level) this.emit('LDL', s.slot); else this.emit('LDV', this.R.level - s.level, s.slot); }
+  storeVar(s) { if (s.level === 0) this.emit('STG', s.slot); else if (s.level === this.R.level) this.emit('STL', s.slot); else this.emit('STV', this.R.level - s.level, s.slot); }
+  addrVar(s) { if (s.level === 0) this.emit('ADDRG', s.slot); else if (s.level === this.R.level) this.emit('ADDRL', s.slot); else this.emit('ADDRV', this.R.level - s.level, s.slot); }
+
+  /* ----- designators ----- */
+  isVarLike(lc) {
+    for (let w = this.withs.length - 1; w >= 0; w--) if (this.withs[w].type.fields.has(lc)) return true;
+    const s = this.lookup(lc); return !!(s && s.kind === 'var');
+  }
+  desig() {
+    const tok = this.tok, lc = tok.lc; let d = null;
+    if (this.tok.t !== 'id') this.err(122, 'Invalid variable reference');
+    for (let w = this.withs.length - 1; w >= 0 && !d; w--) {
+      const W = this.withs[w], f = W.type.fields.get(lc);
+      if (f) { this.next(); this.loadVar(W.sym); d = { k: 'fld', a: lc, t: f }; }
+    }
+    if (!d) {
+      const s = this.lookup(lc);
+      if (!s) this.err(3, 'Unknown identifier');
+      if (s.kind !== 'var') this.err(122, 'Invalid variable reference');
+      if (this.constMode) this.err(133, 'Cannot evaluate this expression');
+      this.next();
+      if (s.ref) { this.loadVar(s); d = { k: 'ref', t: s.type }; } else d = { k: 'var', s, t: s.type };
+    }
+    return this.selectors(d);
+  }
+  loadPending(d) {
+    switch (d.k) {
+      case 'var': this.loadVar(d.s); break;
+      case 'ref': this.emit('LDIND'); break;
+      case 'fld': this.emit('FLD', d.a); break;
+      case 'idx': this.emit('IDX', d.a); break;
+      case 'stridx': this.loadPending(d.base); this.code.push(...d.ibuf); this.emit('SCHAR'); break;
+    }
+  }
+  selectors(d) {
+    for (;;) {
+      if (this.isSym('[')) {
+        if (d.t.k === 'arr') {
+          this.next();
+          do {
+            if (d.t.k !== 'arr') this.err(5, 'Too many indices');
+            this.loadPending(d);
+            const it = this.expr(); if (!isOrd(it)) this.err(26, 'Type mismatch');
+            this.ordConv(it);
+            d = { k: 'idx', a: d.t.lo, t: d.t.el };
+            if (this.isSym(',')) { this.next(); continue; }
+            break;
+          } while (true);
+          this.expectSym(']');
+        } else if (d.t.k === 'str') {
+          this.next();
+          const ibuf = this.capture(() => { const it = this.expr(); if (!isNum(it)) this.err(26, 'Type mismatch'); });
+          this.expectSym(']');
+          d = { k: 'stridx', base: d, ibuf, t: T.char };
+        } else this.err(5, 'Syntax error');
+      } else if (this.isSym('.') && d.t.k === 'rec') {
+        this.next(); this.loadPending(d);
+        if (this.tok.t !== 'id') this.err(2, 'Identifier expected');
+        const f = d.t.fields.get(this.tok.lc); if (!f) this.err(3, 'Unknown identifier');
+        d = { k: 'fld', a: this.tok.lc, t: f }; this.next();
+      } else if (this.isSym('^') && d.t.k === 'ptr') {
+        this.next(); this.loadPending(d);
+        d = { k: 'ref', t: ptrTo(d.t) };
+      } else break;
+    }
+    return d;
+  }
+  beforeRhs(d) {
+    if (d.k === 'stridx') {
+      const b = d.base;
+      if (b.k === 'ref' || b.k === 'fld') this.emit('DUP'); else if (b.k === 'idx') this.emit('DUP2');
+      this.loadPending(b); this.code.push(...d.ibuf);
+    }
+  }
+  afterRhs(d) {
+    switch (d.k) {
+      case 'var': this.storeVar(d.s); break;
+      case 'ref': this.emit('STIND'); break;
+      case 'fld': this.emit('STFLD', d.a); break;
+      case 'idx': this.emit('STIDX', d.a); break;
+      case 'stridx': this.emit('SSET'); this.afterRhs(d.base); break;
+    }
+  }
+  addr(d) {
+    switch (d.k) {
+      case 'var': this.addrVar(d.s); break;
+      case 'ref': break;
+      case 'fld': this.emit('ADDRFLD', d.a); break;
+      case 'idx': this.emit('ADDRIDX', d.a); break;
+      default: this.err(122, 'Invalid variable reference');
+    }
+  }
+  ordConv(t) {
+    if (t.k === 'char') this.emit('F1', _ord); else if (t.k === 'bool') this.emit('F1', Number);
+  }
+  fromOrd(t) {
+    if (t.k === 'char') this.emit('F1', _chr); else if (t.k === 'bool') this.emit('F1', Boolean);
+  }
+  coerce(dst, src) {
+    if (!compat(dst, src)) this.err(26, 'Type mismatch');
+    const c = cloneOf(dst); if (c) this.emit('CLONE', c);
+  }
+  needBool(t) { if (t.k !== 'bool') this.err(39, 'Boolean expression expected'); }
+
+  /* ----- constants ----- */
+  evalConst() {
+    const save = this.code, sm = this.constMode;
+    this.code = []; this.constMode = true;
+    let t;
+    try { t = this.expr(); this.emit('HALT'); } finally { var code = this.code; this.code = save; this.constMode = sm; }
+    const vm = new VM({ main: { nl: 0, inits: [], code } }, {});
+    try { vm.run(1000); } catch (e) { this.err(133, 'Cannot evaluate this expression'); }
+    return { v: vm.st.pop(), t };
+  }
+  typedConst(t) {
+    if (t.k === 'arr') {
+      this.expectSym('('); const a = [];
+      do { a.push(this.typedConst(t.el)); } while (this.acceptSym(','));
+      this.expectSym(')');
+      if (a.length !== t.n) this.err(5, 'Error in typed constant');
+      return a;
+    }
+    if (t.k === 'rec') {
+      this.expectSym('('); const o = mkOf(t)();
+      do {
+        if (this.isSym(')')) break;
+        const n = this.ident().toLowerCase(); const f = t.fields.get(n); if (!f) this.err(3, 'Unknown identifier');
+        this.expectSym(':'); o[n] = this.typedConst(f);
+      } while (this.acceptSym(';'));
+      this.expectSym(')'); return o;
+    }
+    const c = this.evalConst();
+    if (!compat(t, c.t)) this.err(26, 'Type mismatch');
+    return c.v;
+  }
+
+  /* ----- types ----- */
+  parseType() {
+    const t = this.tok;
+    if (this.isSym('(')) {
+      this.next(); const names = [], toks = [];
+      do { toks.push(this.tok); names.push(this.ident()); } while (this.acceptSym(','));
+      this.expectSym(')');
+      const et = { k: 'enum', names, lo: 0, hi: names.length - 1, nm: 'enum' };
+      names.forEach((n, i) => this.declare(n, { kind: 'const', v: i, type: et }, toks[i]));
+      return et;
+    }
+    if (this.isSym('^')) {
+      this.next(); const name = this.ident().toLowerCase();
+      const pt = { k: 'ptr', toName: name, to: null, scope: this.scope }; this.pendPtr.push(pt); return pt;
+    }
+    if (t.t === 'id') {
+      switch (t.lc) {
+        case 'packed': this.next(); return this.parseType();
+        case 'array': {
+          this.next(); this.expectSym('[');
+          const idxs = [];
+          do { const it = this.parseType(); if (!isOrd(it)) this.err(26, 'Type mismatch'); idxs.push(it); } while (this.acceptSym(','));
+          this.expectSym(']'); this.expectKw('of');
+          let el = this.parseType();
+          for (let i = idxs.length - 1; i >= 0; i--) {
+            const n = idxs[i].hi - idxs[i].lo + 1;
+            if (n < 1 || n > 4000000) this.err(5, 'Structure too large');
+            el = { k: 'arr', lo: idxs[i].lo, hi: idxs[i].hi, n, el, idx: idxs[i] };
+          }
+          return el;
+        }
+        case 'record': {
+          this.next(); const fields = new Map(); this.fieldList(fields); this.expectKw('end');
+          return { k: 'rec', fields };
+        }
+        case 'set': {
+          this.next(); this.expectKw('of'); const b = this.parseType(); if (!isOrd(b)) this.err(26, 'Type mismatch');
+          return { k: 'set', base: b };
+        }
+        case 'string': {
+          this.next();
+          if (this.isSym('[')) { this.next(); this.evalConst(); this.expectSym(']'); }
+          return T.str;
+        }
+      }
+      const s = this.lookup(t.lc);
+      if (s && s.kind === 'type') { this.next(); return s.type; }
+    }
+    const lo = this.evalConst(); this.expectSym('..');
+    const hi = this.evalConst();
+    if (lo.t.k !== hi.t.k) this.err(26, 'Type mismatch');
+    const lov = lo.t.k === 'char' ? _ord(lo.v) : +lo.v, hiv = hi.t.k === 'char' ? _ord(hi.v) : +hi.v;
+    if (hiv < lov) this.err(5, 'Error in type');
+    switch (lo.t.k) {
+      case 'int': return { k: 'int', lo: lov, hi: hiv, nm: 'range' };
+      case 'char': return { k: 'char', lo: lov, hi: hiv, nm: 'char' };
+      case 'enum': return { k: 'enum', names: lo.t.names, lo: lov, hi: hiv, nm: 'enum' };
+      case 'bool': return T.bool;
+    }
+    this.err(116, 'Error in type');
+  }
+  fieldList(fields) {
+    while (!this.isKw('end') && !this.isSym(')')) {
+      if (this.isKw('case')) {
+        this.next();
+        if (this.peek().t === 'sym' && this.peek().v === ':') { const tag = this.ident(); this.next(); fields.set(tag.toLowerCase(), this.parseType()); }
+        else this.parseType();
+        this.expectKw('of');
+        for (;;) {
+          if (this.isKw('end') || this.isSym(')')) break;
+          do { this.evalConst(); } while (this.acceptSym(','));
+          this.expectSym(':'); this.expectSym('('); this.fieldList(fields); this.expectSym(')');
+          if (!this.acceptSym(';')) break;
+        }
+        break;
+      }
+      const names = [];
+      do { names.push(this.ident()); } while (this.acceptSym(','));
+      this.expectSym(':'); const t = this.parseType();
+      for (const n of names) { const ln = n.toLowerCase(); if (fields.has(ln)) this.err(4, 'Duplicate identifier'); fields.set(ln, t); }
+      if (!this.acceptSym(';')) break;
+    }
+  }
+
+  /* ----- declarations ----- */
+  block() {
+    for (;;) {
+      if (this.isKw('const')) this.constSection();
+      else if (this.isKw('type')) this.typeSection();
+      else if (this.isKw('var')) this.varSection();
+      else if (this.isKw('procedure') || this.isKw('function')) this.routineDecl();
+      else if (this.isKw('label')) { this.next(); do { this.next(); } while (this.acceptSym(',')); this.expectSym(';'); }
+      else break;
+    }
+    if (!this.isKw('begin')) this.err(36, 'BEGIN expected');
+    this.next(); this.stmtList(); this.expectKw('end');
+  }
+  constSection() {
+    this.next();
+    while (this.tok.t === 'id' && !KW.has(this.tok.lc)) {
+      const tok = this.tok, name = this.ident();
+      if (this.isSym(':')) {
+        this.next(); const t = this.parseType(); this.expectSym('=');
+        const v = this.typedConst(t);
+        const s = this.newSlot(t); const c = cloneOf(t);
+        this.R.inits.push({ slot: s.slot, mk: c ? () => c(v) : () => v });
+        this.declare(name, s, tok);
+      } else {
+        this.expectSym('='); const c = this.evalConst();
+        this.declare(name, { kind: 'const', v: c.v, type: c.t }, tok);
+      }
+      this.expectSym(';');
+    }
+  }
+  typeSection() {
+    this.next();
+    while (this.tok.t === 'id' && !KW.has(this.tok.lc)) {
+      const tok = this.tok, name = this.ident(); this.expectSym('=');
+      const t = this.parseType();
+      this.declare(name, { kind: 'type', type: t }, tok); this.expectSym(';');
+    }
+    for (const pt of this.pendPtr) { try { ptrTo(pt); } catch (e) { this.err(3, 'Unknown identifier'); } }
+    this.pendPtr = [];
+  }
+  varSection() {
+    this.next();
+    while (this.tok.t === 'id' && !KW.has(this.tok.lc)) {
+      const names = [], toks = [];
+      do { toks.push(this.tok); names.push(this.ident()); } while (this.acceptSym(','));
+      this.expectSym(':'); const t = this.parseType();
+      names.forEach((n, i) => {
+        const s = this.newSlot(t); this.declare(n, s, toks[i]);
+        this.R.inits.push({ slot: s.slot, mk: mkOf(t) });
+      });
+      this.expectSym(';');
+    }
+  }
+  routineDecl() {
+    const isFunc = this.tok.lc === 'function'; this.next();
+    const tok = this.tok, name = this.ident();
+    let r, existing = this.scope.syms.get(name.toLowerCase());
+    if (existing && existing.kind === 'routine' && existing.r.forward) r = existing.r;
+    else {
+      r = { name, level: this.R.level + 1, np: 0, params: [], ret: null, inits: [], code: [], nl: 0, rs: -1, parent: this.R, forward: false };
+      this.declare(name, { kind: 'routine', r }, tok); existing = null;
+    }
+    const wasForward = !!existing;
+    const sc = { parent: this.scope, syms: new Map() };
+    if (this.isSym('(')) {
+      this.next();
+      const params = [];
+      if (!this.isSym(')')) do {
+        let ref = false;
+        if (this.isKw('var')) { ref = true; this.next(); } else if (this.isKw('const')) this.next();
+        const ns = []; do { ns.push(this.ident()); } while (this.acceptSym(','));
+        this.expectSym(':'); const t = this.parseType();
+        for (const n of ns) params.push({ name: n, type: t, ref });
+      } while (this.acceptSym(';'));
+      this.expectSym(')');
+      if (!wasForward) r.params = params;
+    }
+    if (isFunc && !(wasForward && r.ret)) {
+      if (this.isSym(':')) { this.next(); r.ret = this.parseType(); }
+      else if (!wasForward) this.err(86, '":" expected');
+    }
+    this.expectSym(';');
+    r.np = r.params.length;
+    if (r.ret) { r.rs = r.np; r.nl = r.np + 1; } else r.nl = r.np;
+    if (this.isKw('forward')) { this.next(); this.expectSym(';'); r.forward = true; return; }
+    r.forward = false;
+    const saved = { R: this.R, code: this.code, loops: this.loops, withs: this.withs, scope: this.scope };
+    this.R = r; this.code = r.code; this.loops = []; this.withs = []; this.scope = sc;
+    r.params.forEach((p, i) => { sc.syms.set(p.name.toLowerCase(), { kind: 'var', type: p.type, level: r.level, slot: i, ref: p.ref }); });
+    if (r.ret) r.inits.push({ slot: r.rs, mk: mkOf(r.ret) });
+    this.block(); this.expectSym(';');
+    this.emit('RET');
+    this.R = saved.R; this.code = saved.code; this.loops = saved.loops; this.withs = saved.withs; this.scope = saved.scope;
+  }
+
+  /* ----- statements ----- */
+  stmtList() {
+    for (;;) {
+      this.statement();
+      if (this.isSym(';')) { this.next(); continue; }
+      const t = this.tok;
+      if (t.t === 'id' && (t.lc === 'end' || t.lc === 'until' || t.lc === 'else' || t.lc === 'otherwise')) break;
+      if (t.t === 'eof') this.err(10, 'Unexpected end of file');
+      this.err(85, '";" expected');
+    }
+  }
+  statement() {
+    const t = this.tok;
+    this.curLine = t.line;
+    if (t.t === 'id') {
+      switch (t.lc) {
+        case 'end': case 'until': case 'else': case 'otherwise': return;
+        case 'begin': this.next(); this.stmtList(); this.expectKw('end'); return;
+        case 'if': return this.ifStmt();
+        case 'while': return this.whileStmt();
+        case 'repeat': return this.repeatStmt();
+        case 'for': return this.forStmt();
+        case 'case': return this.caseStmt();
+        case 'with': return this.withStmt();
+        case 'goto': this.err(5, 'GOTO is not supported');
+      }
+      return this.simpleStmt();
+    }
+    if (t.t === 'sym' && (t.v === ';')) return;
+    if (t.t === 'eof') this.err(10, 'Unexpected end of file');
+    this.err(113, 'Error in statement');
+  }
+  simpleStmt() {
+    const t = this.tok, lc = t.lc;
+    if (this.isVarLike(lc)) {
+      const d = this.desig();
+      this.expectSym(':=');
+      this.beforeRhs(d); const rt = this.expr(); this.coerce(d.t, rt); this.afterRhs(d);
+      return;
+    }
+    const s = this.lookup(lc);
+    if (s) {
+      if (s.kind === 'routine') {
+        if (s.r.ret && this.peek().t === 'sym' && this.peek().v === ':=') {
+          if (s.r !== this.R) this.err(122, 'Invalid variable reference');
+          this.next(); this.next();
+          const rt = this.expr(); this.coerce(s.r.ret, rt);
+          this.storeVar({ level: this.R.level, slot: this.R.rs });
+          return;
+        }
+        this.next(); this.callRoutine(s.r);
+        if (s.r.ret) this.emit('POP');
+        return;
+      }
+      this.err(5, 'Syntax error');
+    }
+    this.bproc(lc);
+  }
+  callRoutine(r) {
+    if (this.constMode) this.err(133, 'Cannot evaluate this expression');
+    const n = r.params.length;
+    if (n > 0) {
+      this.expectSym('(');
+      for (let k = 0; k < n; k++) {
+        if (k > 0) { if (!this.isSym(',')) this.err(87, 'Not enough actual parameters'); this.next(); }
+        const p = r.params[k];
+        if (p.ref) {
+          if (this.tok.t !== 'id' || !this.isVarLike(this.tok.lc)) this.err(122, 'Invalid variable reference');
+          const d = this.desig();
+          if (d.t.k !== p.type.k && !(isNum(d.t) && isNum(p.type) && false)) this.err(26, 'Type mismatch');
+          this.addr(d);
+        } else { const at = this.expr(); this.coerce(p.type, at); }
+      }
+      if (!this.isSym(')')) this.err(89, 'Too many actual parameters');
+      this.next();
+    } else if (this.isSym('(')) { this.next(); this.expectSym(')'); }
+    this.emit('CALL', r, this.R.level - (r.level - 1));
+  }
+  ifStmt() {
+    this.next(); const t = this.expr(); this.needBool(t);
+    const jf = this.emit('JF', 0);
+    this.expectKw('then'); this.statement();
+    if (this.isKw('else')) { this.next(); const je = this.emit('JMP', 0); this.patch(jf); this.statement(); this.patch(je); }
+    else this.patch(jf);
+  }
+  whileStmt() {
+    this.next(); const top = this.code.length;
+    const t = this.expr(); this.needBool(t);
+    const jf = this.emit('JF', 0); this.expectKw('do');
+    const loop = { brk: [], cont: [], top }; this.loops.push(loop);
+    this.statement(); this.loops.pop();
+    this.jumpBack('JMP', top); this.patch(jf); this.patchAll(loop.brk);
+  }
+  repeatStmt() {
+    this.next(); const top = this.code.length;
+    const loop = { brk: [], cont: [], top: null }; this.loops.push(loop);
+    this.stmtList(); this.expectKw('until'); this.loops.pop();
+    this.patchAll(loop.cont);
+    const t = this.expr(); this.needBool(t);
+    this.jumpBack('JF', top); this.patchAll(loop.brk);
+  }
+  forStmt() {
+    this.next();
+    const tok = this.tok; const name = this.ident(); const s = this.lookup(name.toLowerCase());
+    if (!s || s.kind !== 'var' || s.ref) this.err(3, 'Unknown identifier', tok);
+    if (!isOrd(s.type)) this.err(26, 'Type mismatch', tok);
+    this.expectSym(':=');
+    const t1 = this.expr(); if (!compat(s.type, t1)) this.err(26, 'Type mismatch');
+    let down = false;
+    if (this.isKw('downto')) { down = true; this.next(); } else this.expectKw('to');
+    const loop = { brk: [], cont: [], top: null };
+    let top, jend;
+    if (s.type.k === 'int') {
+      this.storeVar(s);
+      const t2 = this.expr(); if (!compat(s.type, t2)) this.err(26, 'Type mismatch');
+      const end = this.newSlot(T.int); this.storeVar(end);
+      top = this.code.length;
+      this.loadVar(s); this.loadVar(end); this.emit(down ? 'LT' : 'GT'); jend = this.emit('JT', 0);
+      this.expectKw('do'); this.loops.push(loop); this.statement(); this.loops.pop();
+      this.patchAll(loop.cont);
+      this.loadVar(s); this.emit('PUSHK', 1); this.emit(down ? 'SUB' : 'ADD'); this.storeVar(s);
+    } else {
+      this.ordConv(t1);
+      const cur = this.newSlot(T.int), end = this.newSlot(T.int);
+      this.storeVar(cur);
+      const t2 = this.expr(); this.ordConv(t2); this.storeVar(end);
+      top = this.code.length;
+      this.loadVar(cur); this.loadVar(end); this.emit(down ? 'LT' : 'GT'); jend = this.emit('JT', 0);
+      this.loadVar(cur); this.fromOrd(s.type); this.storeVar(s);
+      this.expectKw('do'); this.loops.push(loop); this.statement(); this.loops.pop();
+      this.patchAll(loop.cont);
+      this.loadVar(cur); this.emit('PUSHK', 1); this.emit(down ? 'SUB' : 'ADD'); this.storeVar(cur);
+    }
+    this.jumpBack('JMP', top); this.patch(jend); this.patchAll(loop.brk);
+  }
+  caseStmt() {
+    this.next(); const t = this.expr(); if (!isOrd(t)) this.err(26, 'Type mismatch');
+    const tmp = this.newSlot(t); this.storeVar(tmp); this.expectKw('of');
+    const ends = [];
+    for (;;) {
+      if (this.isKw('end') || this.isKw('else') || this.isKw('otherwise')) break;
+      const bodyJ = [];
+      do {
+        const lo = this.evalConst();
+        if (this.isSym('..')) {
+          this.next(); const hi = this.evalConst();
+          this.loadVar(tmp); this.emit('PUSHK', lo.v); this.emit('GE'); const jn = this.emit('JF', 0);
+          this.loadVar(tmp); this.emit('PUSHK', hi.v); this.emit('LE'); bodyJ.push(this.emit('JT', 0)); this.patch(jn);
+        } else { this.loadVar(tmp); this.emit('PUSHK', lo.v); this.emit('EQ'); bodyJ.push(this.emit('JT', 0)); }
+      } while (this.acceptSym(','));
+      const skip = this.emit('JMP', 0); this.patchAll(bodyJ);
+      this.expectSym(':'); this.statement();
+      ends.push(this.emit('JMP', 0)); this.patch(skip);
+      if (!this.acceptSym(';')) break;
+    }
+    if (this.isKw('else') || this.isKw('otherwise')) { this.next(); this.stmtList(); }
+    this.expectKw('end'); this.patchAll(ends);
+  }
+  withStmt() {
+    this.next(); let cnt = 0;
+    do {
+      if (this.tok.t !== 'id' || !this.isVarLike(this.tok.lc)) this.err(122, 'Invalid variable reference');
+      const d = this.desig(); if (d.t.k !== 'rec') this.err(26, 'Type mismatch');
+      this.loadPending(d);
+      const sym = this.newSlot(d.t); this.storeVar(sym);
+      this.withs.push({ type: d.t, sym }); cnt++;
+    } while (this.acceptSym(','));
+    this.expectKw('do'); this.statement(); this.withs.length -= cnt;
+  }
+
+  /* ----- expressions ----- */
+  expr() {
+    const a = this.simple(); const t = this.tok;
+    if ((t.t === 'sym' && REL.has(t.v)) || (t.t === 'id' && t.lc === 'in')) {
+      const op = t.t === 'id' ? 'in' : t.v; this.next();
+      if (op === 'in') {
+        if (!isOrd(a)) this.err(26, 'Type mismatch');
+        this.ordConv(a); const b = this.simple(); if (b.k !== 'set') this.err(41, 'Operand types do not match operator');
+        this.emit('SETIN'); return T.bool;
+      }
+      const b = this.simple();
+      let name = { '=': 'EQ', '<>': 'NE', '<': 'LT', '>': 'GT', '<=': 'LE', '>=': 'GE' }[op];
+      if (a.k === 'set' && b.k === 'set') {
+        name = { '=': 'SEQ', '<>': 'SNE', '<=': 'SLE', '>=': 'SGE' }[op];
+        if (!name) this.err(41, 'Operand types do not match operator');
+      } else if (!((isNum(a) && isNum(b)) || (isStrLike(a) && isStrLike(b)) || (a.k === b.k && (isOrd(a) || a.k === 'ptr')) || (a.k === 'ptr' && b.k === 'nil') || (a.k === 'nil' && b.k === 'ptr') || (a.k === 'nil' && b.k === 'nil')))
+        this.err(41, 'Operand types do not match operator');
+      if (a.k === 'enum' && b.k === 'enum' && a.names !== b.names) this.err(41, 'Operand types do not match operator');
+      this.emit(name); return T.bool;
+    }
+    return a;
+  }
+  simple() {
+    let neg = false;
+    if (this.isSym('-')) { neg = true; this.next(); } else if (this.isSym('+')) this.next();
+    let a = this.term();
+    if (neg) { if (!isNum(a)) this.err(41, 'Operand types do not match operator'); this.emit('NEG'); }
+    for (;;) {
+      const t = this.tok; let op = null;
+      if (t.t === 'sym' && (t.v === '+' || t.v === '-')) op = t.v;
+      else if (t.t === 'id' && (t.lc === 'or' || t.lc === 'xor')) op = t.lc;
+      if (!op) break;
+      this.next();
+      if (op === 'or' && a.k === 'bool') {
+        const j = this.emit('JTK', 0); const b = this.term(); this.needBool(b); this.patch(j); continue;
+      }
+      const b = this.term();
+      if (op === '+') {
+        if (isNum(a) && isNum(b)) { this.emit('ADD'); a = (a.k === 'real' || b.k === 'real') ? T.real : T.longint; }
+        else if (isStrLike(a) && isStrLike(b)) { this.emit('ADD'); a = T.str; }
+        else if (a.k === 'set' && b.k === 'set') { this.emit('SETU'); }
+        else this.err(41, 'Operand types do not match operator');
+      } else if (op === '-') {
+        if (isNum(a) && isNum(b)) { this.emit('SUB'); a = (a.k === 'real' || b.k === 'real') ? T.real : T.longint; }
+        else if (a.k === 'set' && b.k === 'set') this.emit('SETD');
+        else this.err(41, 'Operand types do not match operator');
+      } else if (op === 'or') {
+        if (a.k === 'int' && b.k === 'int') this.emit('ORI'); else this.err(41, 'Operand types do not match operator');
+      } else {
+        if (a.k === 'bool' && b.k === 'bool') this.emit('XORB');
+        else if (a.k === 'int' && b.k === 'int') this.emit('XORI'); else this.err(41, 'Operand types do not match operator');
+      }
+    }
+    return a;
+  }
+  term() {
+    let a = this.factor();
+    for (;;) {
+      const t = this.tok; let op = null;
+      if (t.t === 'sym' && (t.v === '*' || t.v === '/')) op = t.v;
+      else if (t.t === 'id' && ['div', 'mod', 'and', 'shl', 'shr'].indexOf(t.lc) >= 0) op = t.lc;
+      if (!op) break;
+      this.next();
+      if (op === 'and' && a.k === 'bool') { const j = this.emit('JFK', 0); const b = this.factor(); this.needBool(b); this.patch(j); continue; }
+      const b = this.factor();
+      const bad = () => this.err(41, 'Operand types do not match operator');
+      switch (op) {
+        case '*':
+          if (isNum(a) && isNum(b)) { this.emit('MUL'); a = (a.k === 'real' || b.k === 'real') ? T.real : T.longint; }
+          else if (a.k === 'set' && b.k === 'set') this.emit('SETI'); else bad();
+          break;
+        case '/': if (!isNum(a) || !isNum(b)) bad(); this.emit('DIVR'); a = T.real; break;
+        case 'div': if (a.k !== 'int' || b.k !== 'int') bad(); this.emit('IDIV'); a = T.longint; break;
+        case 'mod': if (a.k !== 'int' || b.k !== 'int') bad(); this.emit('MOD'); a = T.longint; break;
+        case 'and': if (a.k !== 'int' || b.k !== 'int') bad(); this.emit('ANDI'); break;
+        case 'shl': if (a.k !== 'int' || b.k !== 'int') bad(); this.emit('SHL'); break;
+        case 'shr': if (a.k !== 'int' || b.k !== 'int') bad(); this.emit('SHR'); break;
+      }
+    }
+    return a;
+  }
+  setLit() {
+    this.next(); this.emit('NEWSET'); let base = null;
+    if (!this.isSym(']')) do {
+      const a = this.expr(); if (!isOrd(a)) this.err(26, 'Type mismatch'); base = base || a; this.ordConv(a);
+      if (this.isSym('..')) { this.next(); const b = this.expr(); this.ordConv(b); this.emit('SETADDR'); } else this.emit('SETADD');
+    } while (this.acceptSym(','));
+    this.expectSym(']'); return { k: 'set', base };
+  }
+  factor() {
+    const t = this.tok;
+    switch (t.t) {
+      case 'int': this.next(); this.emit('PUSHK', t.v); return (t.v > 32767 || t.v < -32768) ? T.longint : T.int;
+      case 'real': this.next(); this.emit('PUSHK', t.v); return T.real;
+      case 'str': this.next(); this.emit('PUSHK', t.v); return t.v.length === 1 ? T.char : T.str;
+      case 'sym':
+        if (t.v === '(') { this.next(); const r = this.expr(); this.expectSym(')'); return r; }
+        if (t.v === '[') return this.setLit();
+        if (t.v === '@') {
+          this.next(); if (this.tok.t !== 'id' || !this.isVarLike(this.tok.lc)) this.err(122, 'Invalid variable reference');
+          const d = this.desig(); this.addr(d); return { k: 'ptr', to: d.t, scope: null };
+        }
+        this.err(5, 'Syntax error');
+        break;
+      case 'id': {
+        const lc = t.lc;
+        if (lc === 'nil') { this.next(); this.emit('PUSHK', null); return T.nil; }
+        if (lc === 'not') {
+          this.next(); const a = this.factor();
+          if (a.k === 'bool') this.emit('NOT'); else if (a.k === 'int') this.emit('NOTI'); else this.err(41, 'Operand types do not match operator');
+          return a;
+        }
+        if (this.isVarLike(lc)) { const d = this.desig(); this.loadPending(d); return d.t; }
+        const s = this.lookup(lc);
+        if (s) {
+          if (s.kind === 'const') { this.next(); this.emit('PUSHK', s.v); return s.type; }
+          if (s.kind === 'routine') {
+            if (!s.r.ret) this.err(5, 'Syntax error');
+            this.next(); this.callRoutine(s.r); return s.r.ret;
+          }
+          if (s.kind === 'type') {
+            this.next(); this.expectSym('('); const a = this.expr(); this.expectSym(')'); return this.cast(s.type, a);
+          }
+        }
+        return this.bfunc(lc);
+      }
+    }
+    this.err(5, 'Syntax error');
+  }
+  cast(to, a) {
+    switch (to.k) {
+      case 'int': if (a.k === 'real') this.err(26, 'Type mismatch'); this.ordConv(a); return to;
+      case 'char': if (a.k === 'int' || a.k === 'enum') this.emit('F1', _chr); else if (a.k !== 'char') this.err(26, 'Type mismatch'); return T.char;
+      case 'bool': if (a.k === 'int') this.emit('F1', Boolean); return T.bool;
+      case 'enum': return to;
+      case 'real': return T.real;
+    }
+    this.err(26, 'Type mismatch');
+  }
+  args() {
+    const ts = []; this.expectSym('(');
+    if (!this.isSym(')')) do { ts.push(this.expr()); } while (this.acceptSym(','));
+    this.expectSym(')'); return ts;
+  }
+  need(ts, n) { if (ts.length < n) this.err(89, 'Not enough actual parameters'); if (ts.length > n) this.err(89, 'Too many actual parameters'); }
+  bfunc(lc) {
+    const tok = this.tok;
+    switch (lc) {
+      case 'pi': this.next(); this.emit('PUSHK', Math.PI); return T.real;
+      case 'random':
+        this.next();
+        if (this.isSym('(')) { this.args(); this.emit('F1', n => { if (n <= 0) return 0; return Math.floor(Math.random() * n); }); return T.longint; }
+        this.emit('F0', () => Math.random()); return T.real;
+      case 'readkey': this.next(); this.emit('HOSTF', 'readKey', 0, true); return T.char;
+      case 'keypressed': this.next(); this.emit('HOSTF', 'keyPressed', 0, true); return T.bool;
+      case 'wherex': this.next(); this.emit('HOSTF', 'whereX', 0, true); return T.byte;
+      case 'wherey': this.next(); this.emit('HOSTF', 'whereY', 0, true); return T.byte;
+      case 'paramcount': this.next(); this.emit('PUSHK', 0); return T.int;
+      case 'paramstr': this.next(); this.args(); this.emit('POP'); this.emit('PUSHK', ''); return T.str;
+      case 'memavail': case 'maxavail': this.next(); this.emit('PUSHK', 655360); return T.longint;
+      case 'ioresult': this.next(); this.emit('PUSHK', 0); return T.int;
+      case 'eof': case 'eoln': this.next(); if (this.isSym('(')) { this.args(); this.emit('POP'); } this.emit('PUSHK', false); return T.bool;
+      case 'high': case 'low': {
+        this.next(); this.expectSym('(');
+        let ty;
+        if (this.tok.t === 'id' && this.lookup(this.tok.lc) && this.lookup(this.tok.lc).kind === 'type') { ty = this.lookup(this.tok.lc).type; this.next(); }
+        else { const save = this.code.length; ty = this.expr(); this.code.length = save; }
+        this.expectSym(')');
+        let v;
+        if (ty.k === 'arr' || isOrd(ty)) v = lc === 'high' ? ty.hi : ty.lo; else if (ty.k === 'str') v = lc === 'high' ? 255 : 0; else this.err(26, 'Type mismatch');
+        if (ty.k === 'char') { this.emit('PUSHK', _chr(v)); return T.char; }
+        if (ty.k === 'bool') { this.emit('PUSHK', !!v); return T.bool; }
+        this.emit('PUSHK', v); return ty.k === 'arr' ? (ty.idx.k === 'int' ? T.int : T.int) : (ty.k === 'int' ? T.longint : ty);
+      }
+    }
+    const known = ['abs', 'sqr', 'sqrt', 'sin', 'cos', 'arctan', 'exp', 'ln', 'round', 'trunc', 'int', 'frac', 'odd', 'ord', 'chr', 'succ', 'pred', 'length',
+      'upcase', 'lowercase', 'uppercase', 'copy', 'pos', 'concat'];
+    if (known.indexOf(lc) < 0) this.err(3, 'Unknown identifier');
+    this.next();
+    const ts = this.args();
+    const num = i => { if (!ts[i] || !isNum(ts[i])) this.err(26, 'Type mismatch'); };
+    switch (lc) {
+      case 'abs': this.need(ts, 1); num(0); this.emit('F1', Math.abs); return ts[0];
+      case 'sqr': this.need(ts, 1); num(0); this.emit('F1', x => x * x); return ts[0];
+      case 'sqrt': this.need(ts, 1); num(0); this.emit('F1', x => { if (x < 0) throw new RTE(207); return Math.sqrt(x); }); return T.real;
+      case 'sin': this.need(ts, 1); num(0); this.emit('F1', Math.sin); return T.real;
+      case 'cos': this.need(ts, 1); num(0); this.emit('F1', Math.cos); return T.real;
+      case 'arctan': this.need(ts, 1); num(0); this.emit('F1', Math.atan); return T.real;
+      case 'exp': this.need(ts, 1); num(0); this.emit('F1', Math.exp); return T.real;
+      case 'ln': this.need(ts, 1); num(0); this.emit('F1', x => { if (x <= 0) throw new RTE(207); return Math.log(x); }); return T.real;
+      case 'round': this.need(ts, 1); num(0); this.emit('F1', _round); return T.longint;
+      case 'trunc': this.need(ts, 1); num(0); this.emit('F1', Math.trunc); return T.longint;
+      case 'int': this.need(ts, 1); num(0); this.emit('F1', Math.trunc); return T.real;
+      case 'frac': this.need(ts, 1); num(0); this.emit('F1', x => x - Math.trunc(x)); return T.real;
+      case 'odd': this.need(ts, 1); if (ts[0].k !== 'int') this.err(26, 'Type mismatch'); this.emit('F1', x => (x % 2) !== 0); return T.bool;
+      case 'ord': this.need(ts, 1); if (!isOrd(ts[0])) this.err(26, 'Type mismatch'); this.ordConv(ts[0]); return T.longint;
+      case 'chr': this.need(ts, 1); if (ts[0].k !== 'int') this.err(26, 'Type mismatch'); this.emit('F1', _chr); return T.char;
+      case 'succ': case 'pred': {
+        this.need(ts, 1); if (!isOrd(ts[0])) this.err(26, 'Type mismatch');
+        const d = lc === 'succ' ? 1 : -1;
+        if (ts[0].k === 'char') this.emit('F1', c => _chr(_ord(c) + d)); else if (ts[0].k === 'bool') this.emit('F1', b => d > 0); else this.emit('F1', x => x + d);
+        return ts[0];
+      }
+      case 'length': this.need(ts, 1); if (!isStrLike(ts[0])) this.err(26, 'Type mismatch'); this.emit('F1', s => s.length); return T.int;
+      case 'upcase': this.need(ts, 1); if (!isStrLike(ts[0])) this.err(26, 'Type mismatch'); this.emit('F1', c => (c >= 'a' && c <= 'z') ? c.toUpperCase() : c); return T.char;
+      case 'lowercase': this.need(ts, 1); this.emit('F1', s => s.toLowerCase()); return ts[0];
+      case 'uppercase': this.need(ts, 1); this.emit('F1', s => s.toUpperCase()); return ts[0];
+      case 'copy': this.need(ts, 3); if (!isStrLike(ts[0]) || ts[1].k !== 'int' || ts[2].k !== 'int') this.err(26, 'Type mismatch');
+        this.emit('F3', (s, i, n) => s.substr(Math.max(i, 1) - 1, Math.max(n, 0))); return T.str;
+      case 'pos': this.need(ts, 2); if (!isStrLike(ts[0]) || !isStrLike(ts[1])) this.err(26, 'Type mismatch');
+        this.emit('F2', (sub, s) => s.indexOf(sub) + 1); return T.int;
+      case 'concat': if (ts.length < 1) this.err(89, 'Not enough actual parameters'); for (let k = 1; k < ts.length; k++) this.emit('ADD'); return T.str;
+    }
+    this.err(3, 'Unknown identifier', tok);
+  }
+  writeArg() {
+    const t = this.expr(); let f = 0;
+    if (this.acceptSym(':')) { const w = this.expr(); if (w.k !== 'int') this.err(26, 'Type mismatch'); f |= 1; if (this.acceptSym(':')) { const d = this.expr(); if (d.k !== 'int') this.err(26, 'Type mismatch'); f |= 2; } }
+    const kind = (t.k === 'int' || t.k === 'enum') ? 'i' : t.k === 'real' ? 'r' : t.k === 'bool' ? 'b' : isStrLike(t) ? 's' : null;
+    if (!kind) this.err(26, 'Type mismatch');
+    return { kind, f };
+  }
+  bproc(lc) {
+    const tok = this.tok;
+    const hostProc = (name, n) => { this.next(); if (n > 0) { const ts = this.args(); this.need(ts, n); for (const x of ts) if (!isNum(x)) this.err(26, 'Type mismatch'); } else if (this.isSym('(')) { this.next(); this.expectSym(')'); } this.emit('HOSTF', name, n, false); };
+    switch (lc) {
+      case 'write': case 'writeln':
+        this.next();
+        if (this.isSym('(')) {
+          this.next();
+          if (!this.isSym(')')) do { const a = this.writeArg(); this.emit('WV', a.kind, a.f); } while (this.acceptSym(','));
+          this.expectSym(')');
+        }
+        if (lc === 'writeln') this.emit('WLN');
+        return;
+      case 'read': case 'readln':
+        this.next();
+        if (this.isSym('(')) {
+          this.next();
+          do {
+            if (this.tok.t !== 'id' || !this.isVarLike(this.tok.lc)) this.err(122, 'Invalid variable reference');
+            const d = this.desig();
+            const k = d.t.k === 'int' ? 'i' : d.t.k === 'real' ? 'r' : d.t.k === 'char' ? 'c' : d.t.k === 'str' ? 's' : null;
+            if (!k) this.err(26, 'Type mismatch');
+            this.emit('READ', k); this.afterRhs(d);
+          } while (this.acceptSym(','));
+          this.expectSym(')');
+        }
+        if (lc === 'readln') this.emit('RLN');
+        return;
+      case 'inc': case 'dec': {
+        this.next(); this.expectSym('(');
+        if (this.tok.t !== 'id' || !this.isVarLike(this.tok.lc)) this.err(122, 'Invalid variable reference');
+        const d = this.desig(); if (!isOrd(d.t)) this.err(26, 'Type mismatch');
+        this.addr(d);
+        if (this.acceptSym(',')) { const n = this.expr(); if (n.k !== 'int') this.err(26, 'Type mismatch'); } else this.emit('PUSHK', 1);
+        if (lc === 'dec') this.emit('NEG');
+        this.emit(d.t.k === 'char' ? 'INCC' : 'INC'); this.expectSym(')'); return;
+      }
+      case 'new': case 'dispose': {
+        this.next(); this.expectSym('(');
+        if (this.tok.t !== 'id' || !this.isVarLike(this.tok.lc)) this.err(122, 'Invalid variable reference');
+        const d = this.desig(); if (d.t.k !== 'ptr') this.err(142, 'Pointer type expected');
+        if (lc === 'new') { this.addr(d); this.emit('NEWP', mkOf(ptrTo(d.t))); } else { this.loadPending(d); this.emit('POP'); }
+        this.expectSym(')'); return;
+      }
+      case 'halt': this.next(); if (this.isSym('(')) { this.args(); this.emit('POP'); } this.emit('HALT'); return;
+      case 'exit': this.next(); if (this.isSym('(')) { this.next(); this.expectSym(')'); } this.emit(this.R === this.main ? 'HALT' : 'RET'); return;
+      case 'break': case 'continue': {
+        this.next(); const L = this.loops[this.loops.length - 1]; if (!L) this.err(5, 'Syntax error', tok);
+        if (lc === 'break') L.brk.push(this.emit('JMP', 0));
+        else if (L.top !== null) this.jumpBack('JMP', L.top); else L.cont.push(this.emit('JMP', 0));
+        return;
+      }
+      case 'delete': {
+        this.next(); this.expectSym('(');
+        if (this.tok.t !== 'id' || !this.isVarLike(this.tok.lc)) this.err(122, 'Invalid variable reference');
+        const d = this.desig(); if (d.t.k !== 'str') this.err(26, 'Type mismatch'); this.addr(d);
+        this.expectSym(','); const p = this.expr(); this.expectSym(','); const n = this.expr();
+        if (p.k !== 'int' || n.k !== 'int') this.err(26, 'Type mismatch');
+        this.emit('DELSTR'); this.expectSym(')'); return;
+      }
+      case 'insert': {
+        this.next(); this.expectSym('('); const s = this.expr(); if (!isStrLike(s)) this.err(26, 'Type mismatch'); this.expectSym(',');
+        if (this.tok.t !== 'id' || !this.isVarLike(this.tok.lc)) this.err(122, 'Invalid variable reference');
+        const d = this.desig(); if (d.t.k !== 'str') this.err(26, 'Type mismatch'); this.addr(d);
+        this.expectSym(','); const p = this.expr(); if (p.k !== 'int') this.err(26, 'Type mismatch');
+        this.emit('INSSTR'); this.expectSym(')'); return;
+      }
+      case 'str': {
+        this.next(); this.expectSym('('); const a = this.writeArg();
+        if (a.kind === 'b' ) this.err(26, 'Type mismatch');
+        this.emit('FMTV', a.kind, a.f); this.expectSym(',');
+        if (this.tok.t !== 'id' || !this.isVarLike(this.tok.lc)) this.err(122, 'Invalid variable reference');
+        const d = this.desig(); if (d.t.k !== 'str') this.err(26, 'Type mismatch'); this.addr(d); this.emit('STINDR'); this.expectSym(')'); return;
+      }
+      case 'val': {
+        this.next(); this.expectSym('('); const s = this.expr(); if (!isStrLike(s)) this.err(26, 'Type mismatch'); this.expectSym(',');
+        if (this.tok.t !== 'id' || !this.isVarLike(this.tok.lc)) this.err(122, 'Invalid variable reference');
+        const d = this.desig(); if (d.t.k !== 'int' && d.t.k !== 'real') this.err(26, 'Type mismatch'); this.addr(d); this.expectSym(',');
+        if (this.tok.t !== 'id' || !this.isVarLike(this.tok.lc)) this.err(122, 'Invalid variable reference');
+        const c = this.desig(); if (c.t.k !== 'int') this.err(26, 'Type mismatch'); this.addr(c);
+        this.emit('VAL', d.t.k === 'int' ? 'i' : 'r'); this.expectSym(')'); return;
+      }
+      case 'include': case 'exclude': {
+        this.next(); this.expectSym('(');
+        if (this.tok.t !== 'id' || !this.isVarLike(this.tok.lc)) this.err(122, 'Invalid variable reference');
+        const d = this.desig(); if (d.t.k !== 'set') this.err(26, 'Type mismatch'); this.addr(d); this.expectSym(',');
+        const e = this.expr(); this.ordConv(e); this.emit(lc === 'include' ? 'SETINC' : 'SETEXC'); this.expectSym(')'); return;
+      }
+      case 'randomize': this.next(); return;
+      case 'readkey': this.next(); this.emit('HOSTF', 'readKey', 0, true); this.emit('POP'); return;
+      case 'clrscr': return hostProc('clrscr', 0);
+      case 'clreol': return hostProc('clreol', 0);
+      case 'normvideo': return hostProc('normvideo', 0);
+      case 'highvideo': return hostProc('highvideo', 0);
+      case 'lowvideo': return hostProc('lowvideo', 0);
+      case 'nosound': return hostProc('nosound', 0);
+      case 'sound': return hostProc('sound', 1);
+      case 'delay': return hostProc('delay', 1);
+      case 'gotoxy': return hostProc('gotoxy', 2);
+      case 'textcolor': return hostProc('textcolor', 1);
+      case 'textbackground': return hostProc('textbackground', 1);
+      case 'textmode': this.next(); if (this.isSym('(')) { while (!this.isSym(')') && this.tok.t !== 'eof') this.next(); this.next(); } this.emit('HOSTF', 'clrscr', 0, false); return;
+      case 'window': return hostProc('window', 4);
+      case 'gettime': case 'getdate': {
+        this.next(); this.expectSym('(');
+        for (let k = 0; k < 4; k++) {
+          if (k) this.expectSym(',');
+          if (this.tok.t !== 'id' || !this.isVarLike(this.tok.lc)) this.err(122, 'Invalid variable reference');
+          const d = this.desig(); this.addr(d);
+        }
+        this.expectSym(')'); this.emit('HOSTF', lc === 'gettime' ? 'getTime' : 'getDate', 4, false); return;
+      }
+    }
+    this.err(3, 'Unknown identifier', tok);
+  }
+
+  compile() {
+    if (this.isKw('program')) {
+      this.next(); this.ident();
+      if (this.isSym('(')) { while (!this.isSym(')') && this.tok.t !== 'eof') this.next(); this.next(); }
+      this.expectSym(';');
+    } else if (this.isKw('unit')) this.err(5, 'Units are not supported; use a PROGRAM');
+    if (this.isKw('uses')) { this.next(); do { this.ident(); } while (this.acceptSym(',')); this.expectSym(';'); }
+    this.block(); this.expectSym('.');
+    this.emit('HALT');
+    return { main: this.main };
+  }
+}
+
+function compile(src) { return new Compiler(src).compile(); }
+
+G.Pascal = { compile, VM, PErr, RTE, RTE_MSG, KW, lex, _chr, _ord, toCode, CP };
+if (typeof module !== 'undefined') module.exports = G.Pascal;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function(){
+'use strict';
+const P=window.Pascal;
+const SAMPLES={"BOUNCE.PAS": "{ BOUNCE.PAS - animation with Delay and KeyPressed }\nprogram Bounce;\nuses Crt;\nvar\n  X, Y, DX, DY: Integer;\nbegin\n  ClrScr;\n  TextColor(LightGray);\n  GotoXY(2, 1); Write('Bouncing ball - press any key to stop');\n  X := 10; Y := 5; DX := 1; DY := 1;\n  repeat\n    GotoXY(X, Y);\n    Write(' ');\n    X := X + DX;\n    Y := Y + DY;\n    if (X <= 1) or (X >= 79) then DX := -DX;\n    if (Y <= 2) or (Y >= 24) then DY := -DY;\n    GotoXY(X, Y);\n    TextColor(Yellow);\n    Write(#2);\n    Delay(25);\n  until KeyPressed;\n  ReadKey;\n  ClrScr;\n  WriteLn('Done.');\nend.\n", "BOXES.PAS": "{ BOXES.PAS - text-mode windows with line-drawing characters }\nprogram Boxes;\nuses Crt;\n\nprocedure Box(X1, Y1, X2, Y2, Fore, Back: Integer; const Title: string);\nvar\n  i, j: Integer;\nbegin\n  TextColor(Fore);\n  TextBackground(Back);\n  GotoXY(X1, Y1); Write(#201);\n  for i := X1 + 1 to X2 - 1 do Write(#205);\n  Write(#187);\n  for j := Y1 + 1 to Y2 - 1 do\n  begin\n    GotoXY(X1, j); Write(#186);\n    for i := X1 + 1 to X2 - 1 do Write(' ');\n    Write(#186);\n  end;\n  GotoXY(X1, Y2); Write(#200);\n  for i := X1 + 1 to X2 - 1 do Write(#205);\n  Write(#188);\n  GotoXY(X1 + 2, Y1); Write(' ', Title, ' ');\n  { shadow }\n  TextBackground(Black);\n  TextColor(DarkGray);\n  for j := Y1 + 1 to Y2 + 1 do begin GotoXY(X2 + 1, j); Write(#177#177); end;\n  GotoXY(X1 + 2, Y2 + 1);\n  for i := X1 + 2 to X2 + 2 do Write(#177);\nend;\n\nbegin\n  TextBackground(Blue);\n  ClrScr;\n  Box(5, 3, 40, 12, White, Cyan, 'Hello');\n  TextColor(Black); TextBackground(Cyan);\n  GotoXY(8, 6);  Write('Text mode is still fun.');\n  GotoXY(8, 8);  Write('CP437 box characters work.');\n  Box(30, 9, 70, 20, Yellow, Red, 'Warning');\n  TextColor(White); TextBackground(Red);\n  GotoXY(34, 13); Write('Overlapping windows!');\n  TextColor(LightGray); TextBackground(Black);\n  GotoXY(1, 24);\n  Write('Press any key');\n  ReadKey;\n  TextBackground(Black);\n  ClrScr;\nend.\n", "FIBO.PAS": "{ FIBO.PAS - recursion }\nprogram Fibonacci;\nvar\n  n: Integer;\n\nfunction Fib(n: Integer): LongInt;\nbegin\n  if n < 2 then\n    Fib := n\n  else\n    Fib := Fib(n - 1) + Fib(n - 2);\nend;\n\nbegin\n  WriteLn('Fibonacci numbers');\n  WriteLn('-----------------');\n  for n := 0 to 24 do\n    WriteLn('Fib(', n:2, ') = ', Fib(n):6);\nend.\n", "GUESS.PAS": "{ GUESS.PAS - input and a loop }\nprogram Guess;\nuses Crt;\nvar\n  Secret, Try, Tries: Integer;\nbegin\n  Randomize;\n  ClrScr;\n  Secret := Random(100) + 1;\n  Tries := 0;\n  WriteLn('I am thinking of a number from 1 to 100.');\n  repeat\n    Write('Your guess? ');\n    ReadLn(Try);\n    Inc(Tries);\n    if Try < Secret then WriteLn('Too low!')\n    else if Try > Secret then WriteLn('Too high!');\n  until Try = Secret;\n  WriteLn('Correct! You needed ', Tries, ' guesses.');\nend.\n", "HELLO.PAS": "{ HELLO.PAS - a first taste of Pascal }\nprogram Hello;\nuses Crt;\nvar\n  i: Integer;\nbegin\n  ClrScr;\n  TextColor(Yellow);\n  WriteLn('Hello, world!');\n  TextColor(LightCyan);\n  WriteLn('Borland Pascal lives on... in your browser.');\n  WriteLn;\n  for i := 1 to 10 do\n  begin\n    TextColor(i + 1);\n    WriteLn(i:2, ' squared is ', i * i:3);\n  end;\n  TextColor(LightGray);\n  WriteLn;\n  Write('Press any key...');\n  ReadKey;\nend.\n", "LIFE.PAS": "{ LIFE.PAS - Conway's Game of Life on a wrapping board }\nprogram Life;\nuses Crt;\nconst\n  W = 60;\n  H = 22;\ntype\n  TBoard = array[0..H - 1, 0..W - 1] of Boolean;\nvar\n  A, B: TBoard;\n  X, Y, Gen: Integer;\n\nfunction Neighbours(var G: TBoard; X, Y: Integer): Integer;\nvar\n  DX, DY, N: Integer;\nbegin\n  N := 0;\n  for DY := -1 to 1 do\n    for DX := -1 to 1 do\n      if (DX <> 0) or (DY <> 0) then\n        if G[(Y + DY + H) mod H, (X + DX + W) mod W] then Inc(N);\n  Neighbours := N;\nend;\n\nbegin\n  ClrScr;\n  for Y := 0 to H - 1 do\n    for X := 0 to W - 1 do\n      A[Y, X] := Random(4) = 0;\n  Gen := 0;\n  repeat\n    GotoXY(1, 1);\n    TextColor(LightGreen);\n    for Y := 0 to H - 1 do\n    begin\n      for X := 0 to W - 1 do\n        if A[Y, X] then Write(#219) else Write(' ');\n      WriteLn;\n    end;\n    TextColor(LightGray);\n    Write('Generation ', Gen, '  - press a key to stop');\n    for Y := 0 to H - 1 do\n      for X := 0 to W - 1 do\n        case Neighbours(A, X, Y) of\n          2: B[Y, X] := A[Y, X];\n          3: B[Y, X] := True;\n        else\n          B[Y, X] := False;\n        end;\n    A := B;\n    Inc(Gen);\n    Delay(60);\n  until KeyPressed;\n  ReadKey;\n  ClrScr;\nend.\n", "LISTS.PAS": "{ LISTS.PAS - records and pointers }\nprogram Lists;\ntype\n  PNode = ^TNode;\n  TNode = record\n    Name: string;\n    Age: Integer;\n    Next: PNode;\n  end;\nvar\n  Head, P: PNode;\n\nprocedure Push(const AName: string; AAge: Integer);\nvar N: PNode;\nbegin\n  New(N);\n  N^.Name := AName;\n  N^.Age := AAge;\n  N^.Next := Head;\n  Head := N;\nend;\n\nfunction Count: Integer;\nvar C: Integer;\n    Q: PNode;\nbegin\n  C := 0; Q := Head;\n  while Q <> nil do begin Inc(C); Q := Q^.Next; end;\n  Count := C;\nend;\n\nbegin\n  Head := nil;\n  Push('Ada', 36);\n  Push('Niklaus', 78);\n  Push('Anders', 63);\n  Push('Philippe', 70);\n  P := Head;\n  while P <> nil do\n  begin\n    WriteLn(P^.Name:10, P^.Age:5);\n    P := P^.Next;\n  end;\n  WriteLn('Total: ', Count, ' people');\nend.\n", "MANDEL.PAS": "{ MANDEL.PAS - the Mandelbrot set in text mode }\nprogram Mandel;\nuses Crt;\nconst\n  Cols = 78;\n  Rows = 24;\n  MaxIter = 40;\nvar\n  X, Y, Iter: Integer;\n  Cr, Ci, Zr, Zi, T: Real;\nbegin\n  ClrScr;\n  for Y := 0 to Rows - 1 do\n  begin\n    for X := 0 to Cols - 1 do\n    begin\n      Cr := -2.2 + X * 3.2 / Cols;\n      Ci := -1.15 + Y * 2.3 / Rows;\n      Zr := 0; Zi := 0; Iter := 0;\n      while (Iter < MaxIter) and (Zr * Zr + Zi * Zi < 4) do\n      begin\n        T := Zr * Zr - Zi * Zi + Cr;\n        Zi := 2 * Zr * Zi + Ci;\n        Zr := T;\n        Inc(Iter);\n      end;\n      if Iter = MaxIter then\n      begin\n        TextColor(Black); Write(' ');\n      end\n      else\n      begin\n        TextColor(9 + Iter mod 7);\n        case Iter mod 4 of\n          0: Write(#176);\n          1: Write(#177);\n          2: Write(#178);\n          3: Write(#219);\n        end;\n      end;\n    end;\n    WriteLn;\n  end;\n  TextColor(LightGray);\n  Write('Press any key');\n  ReadKey;\nend.\n", "PRIMES.PAS": "{ PRIMES.PAS - Sieve of Eratosthenes }\nprogram Primes;\nconst\n  Max = 500;\nvar\n  Sieve: array[2..Max] of Boolean;\n  i, j, Count: Integer;\nbegin\n  for i := 2 to Max do Sieve[i] := True;\n  for i := 2 to Max do\n    if Sieve[i] then\n    begin\n      j := i * 2;\n      while j <= Max do\n      begin\n        Sieve[j] := False;\n        j := j + i;\n      end;\n    end;\n  Count := 0;\n  for i := 2 to Max do\n    if Sieve[i] then\n    begin\n      Write(i:5);\n      Inc(Count);\n      if Count mod 12 = 0 then WriteLn;\n    end;\n  WriteLn;\n  WriteLn;\n  WriteLn(Count, ' primes below ', Max);\nend.\n", "SORTS.PAS": "{ SORTS.PAS - arrays, procedures, var parameters }\nprogram Sorts;\nconst\n  N = 16;\ntype\n  TList = array[1..N] of Integer;\nvar\n  A: TList;\n  i: Integer;\n\nprocedure Swap(var X, Y: Integer);\nvar T: Integer;\nbegin\n  T := X; X := Y; Y := T;\nend;\n\nprocedure Show(const Title: string; var L: TList);\nvar k: Integer;\nbegin\n  Write(Title, ': ');\n  for k := 1 to N do Write(L[k], ' ');\n  WriteLn;\nend;\n\nprocedure BubbleSort(var L: TList);\nvar\n  Pass, k: Integer;\n  Done: Boolean;\nbegin\n  for Pass := 1 to N - 1 do\n  begin\n    Done := True;\n    for k := 1 to N - Pass do\n      if L[k] > L[k + 1] then\n      begin\n        Swap(L[k], L[k + 1]);\n        Done := False;\n      end;\n    if Done then Break;\n  end;\nend;\n\nbegin\n  Randomize;\n  for i := 1 to N do A[i] := Random(90) + 10;\n  Show('Before', A);\n  BubbleSort(A);\n  Show('After ', A);\nend.\n"};
+const $=s=>document.querySelector(s);
+const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e};
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const store={
+  get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+const opts=Object.assign({syn:true,auto:true,scale:1},store.get('bp7.opts',{}));
+const ta=$('#ta'),hl=$('#hl'),userEl=$('#user'),foot=$('#ufoot');
+let cur={name:'NONAME00.PAS',dirty:false};
+let lastErr=null;
+
+/* ============ sizing ============ */
+let ratio=0.4;
+function measureRatio(){
+  try{const c=document.createElement('canvas').getContext('2d');c.font='100px VT323, "Lucida Console", monospace';const w=c.measureText('M').width/100;if(w>0.2&&w<1)ratio=w}catch(e){}
+}
+function layout(){
+  const w=window.innerWidth,h=window.innerHeight;
+  let fs=Math.min(w/(80*ratio),h/26/0.82,32)*opts.scale;
+  fs=Math.max(15,Math.round(fs));
+  const r=document.documentElement.style;
+  r.setProperty('--fs',fs+'px');r.setProperty('--lh',Math.round(fs*0.82)+'px');
+  syncScroll();sizeScreen();
+}
+/* ============ highlighting ============ */
+const KW=new Set(P.KW);['exit','break','continue','otherwise'].forEach(k=>KW.add(k));
+const TOK=/(\{[^}]*\}?|\(\*[\s\S]*?(?:\*\)|$)|\/\/[^\n]*)|('(?:[^'\n]|'')*'?|#\$?[0-9A-Fa-f]+)|(\$[0-9A-Fa-f]+|\b\d+\.?\d*(?:[eE][+-]?\d+)?\b)|([A-Za-z_]\w*)/g;
+function highlight(src){
+  let out='',last=0,m;TOK.lastIndex=0;
+  while((m=TOK.exec(src))){
+    out+=esc(src.slice(last,m.index));
+    const t=esc(m[0]);
+    if(m[1])out+='<span class="c">'+t+'</span>';
+    else if(m[2])out+='<span class="s">'+t+'</span>';
+    else if(m[3])out+='<span class="n">'+t+'</span>';
+    else out+=KW.has(m[4].toLowerCase())?'<span class="k">'+t+'</span>':t;
+    last=m.index+m[0].length;
+  }
+  return out+esc(src.slice(last));
+}
+function render(){
+  hl.innerHTML=highlight(ta.value)+'\n ';
+  hl.className=opts.syn?'':'plain';
+  syncScroll();updatePos();
+}
+function syncScroll(){
+  hl.style.transform='translate('+(-ta.scrollLeft)+'px,'+(-ta.scrollTop)+'px)';
+  updateBars();
+}
+function updatePos(){
+  const v=ta.value,p=ta.selectionStart,b=v.slice(0,p).split('\n');
+  $('#wpos').textContent=(cur.dirty?'*':'')+b.length+':'+(b[b.length-1].length+1);
+}
+function setTitle(){$('#wtitle').textContent=' '+cur.name+' ';document.title=cur.name+' — Borland Pascal';}
+/* scrollbars */
+function updateBars(){
+  const vt=$('#vs .tr'),vth=$('#vs .th'),ht=$('#hs .tr'),hth=$('#hs .th');
+  const V=vt.clientHeight,Hh=ht.clientWidth;
+  const ch=ta.clientHeight,sh=ta.scrollHeight,cw=ta.clientWidth,sw=ta.scrollWidth;
+  const lh=parseFloat(getComputedStyle(ta).lineHeight)||20;
+  let th=Math.max(lh,V*ch/Math.max(sh,1));if(sh<=ch)th=V;
+  vth.style.height=Math.min(th,V)+'px';vth.style.top=(sh>ch?(V-th)*ta.scrollTop/(sh-ch):0)+'px';
+  let tw=Math.max(lh,Hh*cw/Math.max(sw,1));if(sw<=cw)tw=Hh;
+  hth.style.width=Math.min(tw,Hh)+'px';hth.style.left=(sw>cw?(Hh-tw)*ta.scrollLeft/(sw-cw):0)+'px';
+}
+function dragThumb(bar,vertical){
+  const tr=$(bar+' .tr'),th=$(bar+' .th');
+  tr.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    const rect=tr.getBoundingClientRect();
+    const tlen=vertical?th.offsetHeight:th.offsetWidth,len=vertical?rect.height:rect.width;
+    const move=ev=>{
+      const pos=(vertical?ev.clientY-rect.top:ev.clientX-rect.left)-tlen/2;
+      const f=Math.max(0,Math.min(1,pos/Math.max(1,len-tlen)));
+      if(vertical)ta.scrollTop=f*(ta.scrollHeight-ta.clientHeight);else ta.scrollLeft=f*(ta.scrollWidth-ta.clientWidth);
+    };
+    move(e);
+    const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up)};
+    window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
+  });
+}
+dragThumb('#vs',true);dragThumb('#hs',false);
+function arrow(sel,dx,dy){$(sel).addEventListener('pointerdown',e=>{e.preventDefault();ta.scrollBy(dx*ta.clientWidth/8,dy*(parseFloat(getComputedStyle(ta).lineHeight)||20)*2)})}
+arrow('#vs .u',0,-1);arrow('#vs .d',0,1);arrow('#hs .l',-1,0);arrow('#hs .r',1,0);
+
+/* ============ editor behaviour ============ */
+ta.addEventListener('input',()=>{cur.dirty=true;render();autosave()});
+ta.addEventListener('scroll',syncScroll);
+['keyup','click','select','focus'].forEach(ev=>ta.addEventListener(ev,updatePos));
+document.addEventListener('selectionchange',()=>{if(document.activeElement===ta)updatePos()});
+let saveT=null;
+function autosave(){clearTimeout(saveT);saveT=setTimeout(()=>store.set('bp7.cur',{name:cur.name,text:ta.value,dirty:cur.dirty}),400)}
+function insertText(s){ta.focus();if(!document.execCommand('insertText',false,s)){const a=ta.selectionStart,b=ta.selectionEnd;ta.setRangeText(s,a,b,'end');ta.dispatchEvent(new Event('input'))}}
+ta.addEventListener('keydown',e=>{
+  if(e.key==='Tab'&&!e.ctrlKey&&!e.altKey){e.preventDefault();if(!e.shiftKey)insertText('  ');return}
+  if(e.key==='Enter'&&opts.auto&&!e.ctrlKey&&!e.altKey&&!e.metaKey){
+    e.preventDefault();
+    const v=ta.value,s=ta.selectionStart,ls=v.lastIndexOf('\n',s-1)+1,line=v.slice(ls,s);
+    let ind=line.match(/^[ \t]*/)[0];
+    if(/(\b(begin|repeat|record|of|then|do|else)|\bcase\b.*\bof)\s*$/i.test(line.replace(/\{.*\}|\/\/.*$/,'')))ind+='  ';
+    insertText('\n'+ind);
+  }
+});
+function gotoLine(n,col){
+  const lines=ta.value.split('\n');n=Math.max(1,Math.min(lines.length,n));
+  let pos=0;for(let i=0;i<n-1;i++)pos+=lines[i].length+1;
+  pos+=Math.min((col||1)-1,lines[n-1].length);
+  ta.focus();ta.setSelectionRange(pos,pos);
+  const lh=parseFloat(getComputedStyle(ta).lineHeight)||20;
+  const top=(n-1)*lh;
+  if(top<ta.scrollTop||top>ta.scrollTop+ta.clientHeight-2*lh)ta.scrollTop=Math.max(0,top-ta.clientHeight/3);
+  updatePos();return pos;
+}
+function selectToken(line,col){
+  const pos=gotoLine(line,col);const m=ta.value.slice(pos).match(/^(\w+|\S)/);
+  if(m)ta.setSelectionRange(pos,pos+m[0].length);
+}
+
+/* ============ files ============ */
+const files=()=>store.get('bp7.files',{});
+function setDoc(name,text,dirty){
+  ta.value=text;cur={name,dirty:!!dirty};setTitle();ta.scrollTop=0;ta.scrollLeft=0;ta.setSelectionRange(0,0);render();
+  store.set('bp7.cur',{name,text,dirty:!!dirty});
+}
+function normName(n){n=n.trim().toUpperCase().replace(/[^A-Z0-9_.\-]/g,'');if(!n)return '';if(!/\.[A-Z0-9]{1,3}$/.test(n))n=n.replace(/\.$/,'')+'.PAS';return n.slice(0,16)}
+async function confirmSave(){
+  if(!cur.dirty)return true;
+  const r=await dialog({title:'Warning',body:cur.name+' has been modified.\nSave?',buttons:[{label:'Yes',value:'y',def:true},{label:'No',value:'n'},{label:'Cancel',value:null}]});
+  if(r==='y')return await doSave();
+  return r==='n';
+}
+async function doSave(as){
+  let name=cur.name;
+  if(as||/^NONAME/.test(name)){
+    const r=await prompt1('Save file as','Save file as:',/^NONAME/.test(name)?'':name);
+    if(r==null)return false;name=normName(r);if(!name)return false;
+  }
+  const f=files();f[name]=ta.value;store.set('bp7.files',f);
+  cur={name,dirty:false};setTitle();updatePos();store.set('bp7.cur',{name,text:ta.value,dirty:false});
+  return true;
+}
+function fileList(onlySaved){
+  const f=files(),out=[];
+  Object.keys(f).sort().forEach(n=>out.push({n,size:f[n].length,saved:true}));
+  if(!onlySaved)Object.keys(SAMPLES).sort().forEach(n=>{if(!(n in f))out.push({n,size:SAMPLES[n].length,saved:false})});
+  return out;
+}
+async function openFile(del){
+  if(!del&&!await confirmSave())return;
+  const list=fileList(del);
+  if(!list.length){await dialog({title:'Delete',body:'No saved files.',buttons:[{label:'OK',value:1,def:true}]});return}
+  const body=el('div');
+  const lab=el('label','',del?'Delete file:':'Name');
+  const inp=el('input');inp.type='text';inp.value=del?list[0].n:'*.PAS';
+  const lst=el('div','flist');let sel=0;
+  const draw=()=>{lst.innerHTML='';list.forEach((it,i)=>{const d=el('div',i===sel?'sel':'',esc(it.n)+'<i>'+(it.saved?it.size+' B':'sample')+'</i>');d.onclick=()=>{sel=i;inp.value=it.n;draw()};d.ondblclick=()=>okBtn.click();lst.append(d)});const s=lst.querySelector('.sel');if(s)s.scrollIntoView({block:'nearest'})};
+  const okBtn=null;
+  body.append(lab,inp,lst);
+  const res=await dialog({title:del?'Delete File':'Open a File',body,width:'46ch',
+    onOpen(){draw();inp.focus();inp.select()},
+    onKey(e){if(e.key==='ArrowDown'){sel=Math.min(list.length-1,sel+1);inp.value=list[sel].n;draw();e.preventDefault();return true}
+      if(e.key==='ArrowUp'){sel=Math.max(0,sel-1);inp.value=list[sel].n;draw();e.preventDefault();return true}},
+    buttons:[{label:del?'Delete':'Open',value:'ok',def:true},{label:'Cancel',value:null}]});
+  if(res!=='ok')return;
+  const nm=normName(inp.value==='*.PAS'?list[sel].n:inp.value);
+  const f=files();
+  if(del){delete f[nm];store.set('bp7.files',f);return}
+  if(nm in f)setDoc(nm,f[nm]);
+  else if(nm in SAMPLES)setDoc(nm,SAMPLES[nm]);
+  else await dialog({title:'Error',body:'File not found:\n'+nm,buttons:[{label:'OK',value:1,def:true}]});
+}
+async function newFile(){
+  if(!await confirmSave())return;
+  const f=files();let i=0,n;do{n='NONAME'+String(i++).padStart(2,'0')+'.PAS'}while(n in f);
+  setDoc(n,'',false);ta.focus();
+}
+
+/* ============ dialogs ============ */
+let dlgDepth=0;
+function dialog(o){
+  return new Promise(res=>{
+    dlgDepth++;
+    const ov=el('div','ovl'),d=el('div','dlg');
+    if(o.width)d.style.width=o.width;
+    d.append(el('div','dttl',esc(o.title||'')));
+    const b=el('div','dbody'+(o.pre?' pre':''));
+    if(typeof o.body==='string')b.textContent=o.body;else if(o.body)b.append(o.body);
+    d.append(b);
+    const bar=el('div','dbtns');d.append(bar);
+    let def=null;
+    const close=v=>{window.removeEventListener('keydown',kd,true);ov.remove();dlgDepth--;res(v);if(!userVisible())setTimeout(()=>ta.focus(),0)};
+    (o.buttons||[]).forEach(x=>{const bt=el('button','btn'+(x.def?' def':''),esc(x.label));bt.onclick=()=>close(x.value);bar.append(bt);if(x.def)def=bt});
+    const kd=e=>{
+      if(!ov.isConnected)return;
+      if(o.onKey&&o.onKey(e))return;
+      if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close(null)}
+      else if(e.key==='Enter'&&document.activeElement.tagName!=='BUTTON'){e.preventDefault();e.stopPropagation();if(def)def.click()}
+    };
+    window.addEventListener('keydown',kd,true);
+    ov.append(d);$('#dlgroot').append(ov);
+    if(o.onOpen)o.onOpen();else (def||d).focus();
+  });
+}
+async function prompt1(title,label,init){
+  const body=el('div');const l=el('label','',esc(label));const i=el('input');i.type='text';i.value=init||'';body.append(l,i);
+  const r=await dialog({title,body,width:'40ch',onOpen(){i.focus();i.select()},buttons:[{label:'OK',value:'ok',def:true},{label:'Cancel',value:null}]});
+  return r==='ok'?i.value:null;
+}
+function anyKey(title,lines){
+  return new Promise(res=>{
+    dlgDepth++;
+    const ov=el('div','ovl'),d=el('div','dlg');d.style.width='56ch';
+    d.append(el('div','dttl',esc(title)));
+    const b=el('div','dbody pre');b.innerHTML=lines;d.append(b);ov.append(d);$('#dlgroot').append(ov);
+    const done=e=>{if(e&&e.type==='keydown'&&['Shift','Control','Alt','Meta'].includes(e.key))return;if(e)e.preventDefault();window.removeEventListener('keydown',done,true);ov.remove();dlgDepth--;res();setTimeout(()=>ta.focus(),0)};
+    window.addEventListener('keydown',done,true);ov.addEventListener('pointerdown',done);
+  });
+}
+
+/* ============ menus ============ */
+const I=(l,a,k,x)=>Object.assign({l,a,k:k||''},x||{});
+const MENUS=[
+ {n:'≡',items:[I('~A~bout...','about'),I('~R~efresh display','refresh')]},
+ {n:'~F~ile',items:[I('~N~ew','new'),I('~O~pen...','open','F3'),I('~S~ave','save','F2'),I('S~a~ve as...','saveas'),null,I('~D~elete file...','del'),null,I('E~x~it','exit','Alt+X')]},
+ {n:'~E~dit',items:[I('~U~ndo','undo','Ctrl+Z'),I('~R~edo','redo','Ctrl+Y'),null,I('Cu~t~','cut','Ctrl+X'),I('~C~opy','copy','Ctrl+C'),I('~P~aste','paste','Ctrl+V'),I('C~l~ear','clear','Del'),null,I('Select ~a~ll','selall','Ctrl+A')]},
+ {n:'~S~earch',items:[I('~F~ind...','find','Ctrl+F'),I('~R~eplace...','replace'),I('~S~earch again','again','Ctrl+L'),I('~G~o to line number...','goto','Ctrl+G')]},
+ {n:'~R~un',items:[I('~R~un','run','Ctrl+F9'),I('Program re~s~et','reset','Ctrl+F2'),null,I('~S~tep over','x','F8',{off:1}),I('~T~race into','x','F7',{off:1}),I('~G~o to cursor','x','F4',{off:1})]},
+ {n:'~C~ompile',items:[I('~C~ompile','compile','Alt+F9'),I('~M~ake','make','F9'),I('~B~uild','make'),null,I('~D~estination','x','Memory',{off:1})]},
+ {n:'~D~ebug',items:[I('~O~utput','usr','Alt+F5'),I('~U~ser screen','usr','Alt+F5'),null,I('~B~reakpoints','x','',{off:1}),I('~W~atch','x','',{off:1})]},
+ {n:'~T~ools',items:[I('~S~ample programs...','open','F3'),I('~M~essages','x','',{off:1})]},
+ {n:'~O~ptions',items:[I('~S~yntax highlighting','syn','',{chk:()=>opts.syn}),I('~A~uto indent','auto','',{chk:()=>opts.auto}),null,I('~L~arger text','big'),I('S~m~aller text','small')]},
+ {n:'~W~indow',items:[I('~U~ser screen','usr','Alt+F5'),I('~R~efresh display','refresh'),I('~C~lose','new','Alt+F3')]},
+ {n:'~H~elp',items:[I('~C~ontents','help','F1'),I('~L~anguage notes','help'),null,I('~A~bout...','about')]}
+];
+const hkOf=s=>{const m=/~(.)~/.exec(s);return m?m[1].toLowerCase():null};
+const fmtL=s=>esc(s.replace(/~(.)~/g,'\u0001$1\u0002')).replace(/\u0001/g,'<b class="hk">').replace(/\u0002/g,'</b>');
+const mbar=$('#menubar');
+MENUS.forEach((m,i)=>{
+  const s=el('span','mi',m.n==='≡'?'≡':fmtL(m.n));s.dataset.i=i;mbar.append(s);
+});
+const clock=el('span','',''); clock.id='clock'; mbar.append(clock);
+function tickClock(){const d=new Date();clock.textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+tickClock();setInterval(tickClock,15000);
+let menu=null; // {i,sel,dd}
+function closeMenu(refocus){
+  if(!menu)return;menu.dd&&menu.dd.remove();[...mbar.children].forEach(c=>c.classList.remove('sel'));menu=null;
+  if(refocus!==false&&!userVisible())ta.focus();
+}
+function openMenu(i){
+  closeMenu(false);
+  const m=MENUS[i],dd=el('div','dd');
+  m.items.forEach((it,k)=>{
+    if(!it){dd.append(el('div','sep'));return}
+    const r=el('div','row'+(it.off?' off':''));
+    r.innerHTML=(it.chk&&it.chk()?'<span class="ck">√</span>':'')+'<span>'+fmtL(it.l)+'</span><span class="kb">'+esc(it.k)+'</span>';
+    r.dataset.k=k;
+    r.addEventListener('pointerenter',()=>setSel(k));
+    r.addEventListener('pointerdown',e=>{e.preventDefault();activate(k)});
+    dd.append(r);
+  });
+  const mi=mbar.children[i];mi.classList.add('sel');
+  dd.style.left=mi.offsetLeft+'px';dd.style.top=mbar.offsetHeight+'px';
+  document.body.append(dd);
+  const rr=dd.getBoundingClientRect();if(rr.right>window.innerWidth)dd.style.left=Math.max(0,window.innerWidth-rr.width-8)+'px';
+  menu={i,sel:-1,dd};
+  const first=m.items.findIndex(x=>x&&!x.off);setSel(first);
+}
+function setSel(k){
+  if(!menu)return;menu.sel=k;[...menu.dd.querySelectorAll('.row')].forEach(r=>r.classList.toggle('sel',+r.dataset.k===k));
+}
+function stepSel(d){
+  const its=MENUS[menu.i].items;let k=menu.sel;
+  for(let n=0;n<its.length;n++){k=(k+d+its.length)%its.length;if(its[k]&&!its[k].off)break}
+  setSel(k);
+}
+function activate(k){
+  const it=MENUS[menu.i].items[k];if(!it||it.off)return;
+  closeMenu(false);setTimeout(()=>runAction(it.a),0);
+}
+mbar.addEventListener('pointerdown',e=>{
+  const t=e.target.closest('.mi');if(!t)return;e.preventDefault();
+  const i=+t.dataset.i;if(menu&&menu.i===i)closeMenu();else openMenu(i);
+});
+mbar.addEventListener('pointerover',e=>{const t=e.target.closest('.mi');if(t&&menu&&menu.i!==+t.dataset.i)openMenu(+t.dataset.i)});
+window.addEventListener('pointerdown',e=>{if(menu&&!e.target.closest('.dd,#menubar'))closeMenu()},true);
+
+/* ============ actions ============ */
+const HELP=`BORLAND PASCAL 7  ·  browser edition
+════════════════════════════════════════
+Keys
+  F2 Save     F3 Open      F9 Make      Alt+F9 Compile
+  Ctrl+F9 Run              Alt+F5 User screen
+  F10 Menu    Alt+letter   opens that menu
+  Ctrl+C / Pause  stops a running program
+
+Files are kept in your browser's storage (C:\\BP\\).
+
+The language
+  program, uses Crt/Dos (ignored), const (also typed),
+  type, var, procedure, function (nested, var/const
+  params, forward), records (incl. variant parts),
+  arrays (multi-dimensional), sets, enumerations,
+  subranges, string, char, boolean, real, pointers
+  with New/Dispose, case, with, for, while, repeat,
+  Break, Continue, Exit, Halt.
+
+Units and built-ins
+  Crt:  ClrScr GotoXY WhereX WhereY TextColor
+        TextBackground ClrEol Window Delay Sound
+        NoSound ReadKey KeyPressed
+  Math: Abs Sqr Sqrt Sin Cos ArcTan Exp Ln Round
+        Trunc Int Frac Pi Random Randomize Odd
+  Text: Length Copy Pos Concat UpCase Delete Insert
+        Str Val Chr Ord Succ Pred Inc Dec
+  I/O:  Write WriteLn Read ReadLn (formatting :w:d)
+  Dos:  GetTime GetDate
+
+Differences from the real thing
+  Integers do not wrap on overflow. No file I/O,
+  GOTO, objects, units or the Graph unit.
+  Output uses CP437, so Chr(179) draws lines.`;
+const ACT={
+  about(){return dialog({title:'About',pre:1,width:'52ch',body:'  Borland Pascal 7 — browser edition\n\n  An unofficial tribute to the 1992 IDE.\n  Not affiliated with Borland or Embarcadero.\n  Compiler and virtual machine written in JavaScript.',buttons:[{label:'OK',value:1,def:true}]})},
+  refresh(){layout();render()},
+  new:newFile,open:()=>openFile(false),save:()=>doSave(false),saveas:()=>doSave(true),del:()=>openFile(true),
+  exit:dosShell,
+  undo(){ta.focus();document.execCommand('undo')},redo(){ta.focus();document.execCommand('redo')},
+  cut(){ta.focus();document.execCommand('cut')},copy(){ta.focus();document.execCommand('copy')},
+  async paste(){ta.focus();try{const t=await navigator.clipboard.readText();insertText(t)}catch(e){await dialog({title:'Paste',body:'Use Ctrl+V to paste.',buttons:[{label:'OK',value:1,def:true}]})}},
+  clear(){ta.focus();if(ta.selectionStart!==ta.selectionEnd)document.execCommand('delete')},
+  selall(){ta.focus();ta.select()},
+  async find(){const r=await prompt1('Find','Text to find',store.get('bp7.find',''));if(r){store.set('bp7.find',r);ACT.again()}},
+  async again(){
+    const q=store.get('bp7.find','');if(!q)return ACT.find();
+    const v=ta.value.toLowerCase(),s=ta.selectionEnd;let i=v.indexOf(q.toLowerCase(),s);if(i<0)i=v.indexOf(q.toLowerCase());
+    if(i<0)return dialog({title:'Search',body:'Search string not found',buttons:[{label:'OK',value:1,def:true}]});
+    ta.focus();ta.setSelectionRange(i,i+q.length);
+    const n=v.slice(0,i).split('\n').length;gotoLine(n);ta.setSelectionRange(i,i+q.length);
+  },
+  async replace(){
+    const a=await prompt1('Replace','Text to find',store.get('bp7.find',''));if(!a)return;
+    const b=await prompt1('Replace','Replace with',store.get('bp7.repl',''));if(b==null)return;
+    store.set('bp7.find',a);store.set('bp7.repl',b);
+    const re=new RegExp(a.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');let n=0;
+    const out=ta.value.replace(re,()=>{n++;return b});
+    if(n){ta.focus();ta.select();document.execCommand('insertText',false,out);}
+    await dialog({title:'Replace',body:n+' replacement'+(n===1?'':'s')+' made.',buttons:[{label:'OK',value:1,def:true}]});
+  },
+  async goto(){const r=await prompt1('Go to line number','Enter new line number','');const n=parseInt(r,10);if(n>0)gotoLine(n)},
+  run:()=>runProgram(),reset(){if(vm)vm.abort()},
+  compile:()=>compileCmd(true),make:()=>compileCmd(true),
+  usr(){if(lastRan)showUser(false);else dialog({title:'User screen',body:'No program has been run yet.',buttons:[{label:'OK',value:1,def:true}]})},
+  syn(){opts.syn=!opts.syn;store.set('bp7.opts',opts);render()},
+  auto(){opts.auto=!opts.auto;store.set('bp7.opts',opts)},
+  big(){opts.scale=Math.min(1.8,opts.scale*1.15);store.set('bp7.opts',opts);layout()},
+  small(){opts.scale=Math.max(.6,opts.scale/1.15);store.set('bp7.opts',opts);layout()},
+  help(){return dialog({title:'Help',pre:1,width:'60ch',body:HELP,buttons:[{label:'OK',value:1,def:true}]})},
+  x(){}
+};
+function runAction(a){const f=ACT[a];if(f)return f()}
+
+/* status bar */
+(function(){
+  const sb=$('#status');
+  [['F1','Help','help'],['F2','Save','save'],['F3','Open','open'],['Alt+F9','Compile','compile'],['Ctrl+F9','Run','run'],['F10','Menu','menu']].forEach(([k,l,a])=>{
+    const s=el('span','','<b class="hk">'+k+'</b> '+l);
+    s.addEventListener('pointerdown',e=>{e.preventDefault();if(a==='menu'){menu?closeMenu():openMenu(1)}else runAction(a)});
+    sb.append(s);
+  });
+})();
+$('#wclose').addEventListener('click',newFile);
+
+/* ============ compile & run ============ */
+function showError(msg,code,line,col,rt){
+  const bar=$('#errbar');bar.textContent=(rt?'Error '+code:'Error '+code)+': '+msg+'.';bar.style.display='block';lastErr=true;
+  if(line)selectToken(line,col);
+}
+function hideError(){$('#errbar').style.display='none';lastErr=null}
+function compileSrc(){
+  hideError();
+  try{return P.compile(ta.value)}
+  catch(e){if(e instanceof P.PErr){showError(e.message,e.code,e.line,e.col);return null}
+    showError('Internal compiler error: '+e.message,0);return null}
+}
+async function compileCmd(){
+  const lines=ta.value.split('\n').length;
+  const prog=compileSrc();if(!prog)return;
+  await anyKey('Compiling',
+    ' Main file:    '+cur.name+'\n Compiling:    '+cur.name+'\n\n Line number:  '+lines+'\n Total lines:  '+lines+'\n Free memory:  '+(4096-lines%64)+'K\n\n Status: Compile successful: Press any key');
+}
+
+/* ============ text-mode screen ============ */
+const PAL=['#000000','#0000AA','#00AA00','#00AAAA','#AA0000','#AA00AA','#AA5500','#AAAAAA','#555555','#5555FF','#55FF55','#55FFFF','#FF5555','#FF55FF','#FFFF55','#FFFFFF'];
+const BOX={'─':[1,1,0,0],'│':[0,0,1,1],'┤':[1,0,1,1],'╡':[2,0,1,1],'╢':[1,0,2,2],'╖':[1,0,0,2],'╕':[2,0,0,1],'╣':[2,0,2,2],'║':[0,0,2,2],'╗':[2,0,0,2],'╝':[2,0,2,0],'╜':[1,0,2,0],'╛':[2,0,1,0],'┐':[1,0,0,1],'└':[0,1,1,0],'┴':[1,1,1,0],'┬':[1,1,0,1],'├':[0,1,1,1],'┼':[1,1,1,1],'╞':[0,2,1,1],'╟':[0,1,2,2],'╚':[0,2,2,0],'╔':[0,2,0,2],'╩':[2,2,2,0],'╦':[2,2,0,2],'╠':[0,2,2,2],'═':[2,2,0,0],'╬':[2,2,2,2],'╧':[2,2,1,0],'╨':[1,1,2,0],'╤':[2,2,0,1],'╥':[1,1,0,2],'╙':[0,1,2,0],'╘':[0,2,1,0],'╒':[0,2,0,1],'╓':[0,1,0,2],'╫':[1,1,2,2],'╪':[2,2,1,1],'┘':[1,0,1,0],'┌':[0,1,0,1]};
+class Screen{
+  constructor(cv){
+    this.cv=cv;this.ctx=cv.getContext('2d');this.cols=80;this.rows=25;this.W=9;this.H=16;
+    this.ch=new Uint8Array(2000);this.at=new Uint8Array(2000);this.rowDirty=new Uint8Array(25).fill(1);
+    this.phase=true;this.curOn=true;this.reset();
+  }
+  reset(){this.ch.fill(32);this.at.fill(7);this.x=0;this.y=0;this.fg=7;this.bg=0;this.blink=0;this.win=[0,0,79,24];this.rowDirty.fill(1)}
+  attr(){return this.fg|(this.bg<<4)|(this.blink?128:0)}
+  setFg(c){this.fg=c&15;this.blink=c&128}
+  setBg(c){this.bg=c&7}
+  clrscr(){const[a,b,c,d]=this.win,at=this.attr();for(let y=b;y<=d;y++)for(let x=a;x<=c;x++){this.ch[y*80+x]=32;this.at[y*80+x]=at}this.x=a;this.y=b;this.rowDirty.fill(1)}
+  clreol(){const at=this.attr();for(let x=this.x;x<=this.win[2];x++){this.ch[this.y*80+x]=32;this.at[this.y*80+x]=at}this.rowDirty[this.y]=1}
+  gotoxy(x,y){const[a,b,c,d]=this.win;this.x=Math.max(a,Math.min(c,a+x-1));this.y=Math.max(b,Math.min(d,b+y-1))}
+  window(x1,y1,x2,y2){if(x1<1||y1<1||x2>80||y2>25||x1>x2||y1>y2)return;this.win=[x1-1,y1-1,x2-1,y2-1];this.x=x1-1;this.y=y1-1}
+  scroll(){const[a,b,c,d]=this.win,at=this.attr();for(let y=b;y<d;y++)for(let x=a;x<=c;x++){this.ch[y*80+x]=this.ch[(y+1)*80+x];this.at[y*80+x]=this.at[(y+1)*80+x]}
+    for(let x=a;x<=c;x++){this.ch[d*80+x]=32;this.at[d*80+x]=at}this.rowDirty.fill(1)}
+  lf(){if(this.y>=this.win[3])this.scroll();else this.y++}
+  write(s){
+    for(let i=0;i<s.length;i++){
+      const c=s[i];
+      if(c==='\r'){this.x=this.win[0];continue}
+      if(c==='\n'){this.lf();continue}
+      if(c==='\b'){if(this.x>this.win[0])this.x--;continue}
+      if(c==='\u0007'){beep(800,90);continue}
+      if(c==='\t'){this.x=Math.min(this.win[2],(this.x+8)&~7);continue}
+      const code=c==='\u0000'?32:P.toCode(c);
+      const p=this.y*80+this.x;this.ch[p]=code;this.at[p]=this.attr();this.rowDirty[this.y]=1;
+      if(this.x>=this.win[2]){this.x=this.win[0];this.lf()}else this.x++;
+    }
+  }
+  size(W,H){
+    this.W=W;this.H=H;const dpr=window.devicePixelRatio||1;
+    this.cv.style.width=80*W+'px';this.cv.style.height=25*H+'px';
+    this.cv.width=Math.round(80*W*dpr);this.cv.height=Math.round(25*H*dpr);
+    this.ctx.setTransform(dpr,0,0,dpr,0,0);
+    this.font=Math.round(H*0.98)+'px VT323, "Lucida Console", monospace';
+    this.ctx.font=this.font;const adv=this.ctx.measureText('M').width||W;this.sx=Math.min(1.8,W/adv);
+    this.rowDirty.fill(1);
+  }
+  box(spec,x0,y0){
+    const c=this.ctx,W=this.W,H=this.H,[L,R,U,D]=spec,t=Math.max(1,Math.round(H/16)),o=Math.max(2*t,Math.round(H/9)),cx=W>>1,cy=H>>1;
+    const ys=w=>w===1?[cy]:[cy-o,cy+o],xs=w=>w===1?[cx]:[cx-o,cx+o];
+    const harm=(w,side)=>{if(!w)return;for(const y of ys(w)){
+      const top=w===2&&y<cy,bot=w===2&&y>cy,inner=(top&&U>0)||(bot&&D>0);let e;
+      if(inner){const vw=top?U:D;e=side<0?(vw===2?cx-o:cx):(vw===2?cx+o:cx)}
+      else{const vm=Math.max(U,D);e=side<0?(vm===2?cx+o:cx):(vm===2?cx-o:cx)}
+      if(side<0)c.fillRect(x0,y0+y,e+t,t);else c.fillRect(x0+e,y0+y,W-e,t)}};
+    const varm=(w,side)=>{if(!w)return;for(const x of xs(w)){
+      const l=w===2&&x<cx,r=w===2&&x>cx,inner=(l&&L>0)||(r&&R>0);let e;
+      if(inner){const hw=l?L:R;e=side<0?(hw===2?cy-o:cy):(hw===2?cy+o:cy)}
+      else{const hm=Math.max(L,R);e=side<0?(hm===2?cy+o:cy):(hm===2?cy-o:cy)}
+      if(side<0)c.fillRect(x0+x,y0,t,e+t);else c.fillRect(x0+x,y0+e,t,H-e)}};
+    harm(L,-1);harm(R,1);varm(U,-1);varm(D,1);
+  }
+  cell(cx,cy){
+    const c=this.ctx,W=this.W,H=this.H,i=cy*80+cx,code=this.ch[i],a=this.at[i],x0=cx*W,y0=cy*H;
+    c.fillStyle=PAL[(a>>4)&7];c.fillRect(x0,y0,W,H);
+    const isCur=this.curOn&&this.phase&&cx===this.x&&cy===this.y&&this.showCursor;
+    if(code!==32&&code!==0&&(!(a&128)||this.phase)){
+      c.fillStyle=PAL[a&15];
+      const hh=H>>1,hw=W>>1;
+      switch(code){
+        case 219:c.fillRect(x0,y0,W,H);break;
+        case 220:c.fillRect(x0,y0+hh,W,H-hh);break;
+        case 223:c.fillRect(x0,y0,W,hh);break;
+        case 221:c.fillRect(x0,y0,hw,H);break;
+        case 222:c.fillRect(x0+hw,y0,W-hw,H);break;
+        case 176:case 177:case 178:c.globalAlpha=code===176?.28:code===177?.5:.75;c.fillRect(x0,y0,W,H);c.globalAlpha=1;break;
+        default:{
+          const g=P.CP[code],bx=BOX[g];
+          if(bx)this.box(bx,x0,y0);
+          else{c.save();c.translate(x0,y0);c.scale(this.sx,1);c.font=this.font;c.textAlign='center';c.textBaseline='middle';c.fillText(g,W/(2*this.sx),H*0.54);c.restore()}
+        }
+      }
+    }
+    if(isCur){c.fillStyle=PAL[a&15];c.fillRect(x0,y0+H-Math.max(2,Math.round(H/8)),W,Math.max(2,Math.round(H/8)))}
+  }
+  draw(){
+    for(let y=0;y<25;y++){if(!this.rowDirty[y])continue;this.rowDirty[y]=0;for(let x=0;x<80;x++)this.cell(x,y)}
+  }
+}
+const screen=new Screen($('#screen'));screen.showCursor=true;
+function sizeScreen(){
+  const w=window.innerWidth,hh=window.innerHeight-parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--lh'))*1.3;
+  let W=Math.floor(Math.min(w/80,hh*9/(25*16)));W=Math.max(4,W);screen.size(W,Math.round(W*16/9));
+}
+setInterval(()=>{screen.phase=!screen.phase;if(userVisible()){screen.rowDirty[screen.y]=1;for(let y=0;y<25;y++)if(hasBlink(y))screen.rowDirty[y]=1}},450);
+function hasBlink(y){for(let x=0;x<80;x++)if(screen.at[y*80+x]&128)return true;return false}
+(function loop(){if(userVisible())screen.draw();requestAnimationFrame(loop)})();
+
+/* sound */
+let actx=null,osc=null;
+function audio(){try{if(!actx)actx=new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();return actx}catch(e){return null}}
+function beep(f,ms){const c=audio();if(!c)return;try{const o=c.createOscillator(),g=c.createGain();o.type='square';o.frequency.value=f;g.gain.value=.04;o.connect(g);g.connect(c.destination);o.start();setTimeout(()=>{try{o.stop()}catch(e){}},ms)}catch(e){}}
+
+/* ============ keyboard queue ============ */
+const keyq=[];let waiters=[];
+function pushKey(c){keyq.push(c);if(keyq.length>128)keyq.shift();while(waiters.length&&keyq.length)waiters.shift()(keyq.shift())}
+function nextKey(){return keyq.length?keyq.shift():new Promise(r=>waiters.push(r))}
+const EXT={ArrowUp:72,ArrowDown:80,ArrowLeft:75,ArrowRight:77,Home:71,End:79,PageUp:73,PageDown:81,Insert:82,Delete:83};
+function keyChars(e){
+  const k=e.key;
+  if(k in EXT)return ['\u0000',String.fromCharCode(EXT[k])];
+  if(/^F\d+$/.test(k)){const n=+k.slice(1);if(n>=1&&n<=10)return ['\u0000',String.fromCharCode(58+n)];if(n===11)return ['\u0000',P._chr(133)];if(n===12)return ['\u0000',P._chr(134)];return null}
+  if(k==='Enter')return ['\r'];if(k==='Backspace')return ['\b'];if(k==='Tab')return ['\t'];if(k==='Escape')return [P._chr(27)];
+  if(e.ctrlKey&&!e.altKey&&k.length===1&&/[a-z]/i.test(k))return [P._chr(k.toUpperCase().charCodeAt(0)-64)];
+  if(k.length===1&&!e.ctrlKey&&!e.metaKey){const c=k.charCodeAt(0);return [c<128?k:(P.toCode(k)!==63?k:'?')]}
+  return null;
+}
+
+/* ============ host for the VM ============ */
+let vm=null,running=false,lastRan=false,dosMode=false;
+const mc=new MessageChannel();let tickRes=[];mc.port1.onmessage=()=>{const r=tickRes;tickRes=[];r.forEach(f=>f())};
+const tick=()=>new Promise(r=>{tickRes.push(r);mc.port2.postMessage(0)});
+async function fetchLine(){
+  let s='';
+  for(;;){
+    const k=await nextKey();
+    if(k==='\r'){screen.write('\r\n');return s}
+    if(k==='\b'){if(s.length){s=s.slice(0,-1);screen.write('\b \b')}continue}
+    if(k==='\u0000'){await nextKey();continue}
+    if(k.length===1&&k.charCodeAt(0)>=32&&s.length<127){s+=k;screen.write(k)}
+  }
+}
+const inp={buf:null};
+const host={
+  write:s=>screen.write(s),
+  async readValue(kind){
+    for(;;){
+      if(inp.buf===null)inp.buf=await fetchLine();
+      if(kind==='s'){const r=inp.buf;inp.buf='';return r}
+      if(kind==='c'){if(inp.buf.length){const c=inp.buf[0];inp.buf=inp.buf.slice(1);return c}inp.buf=null;return '\r'}
+      inp.buf=inp.buf.replace(/^\s+/,'');
+      if(!inp.buf.length){inp.buf=null;continue}
+      const t=inp.buf.match(/^\S+/)[0];inp.buf=inp.buf.slice(t.length);
+      if(kind==='i'){if(!/^[+-]?\d+$/.test(t))throw new P.RTE(106);return parseInt(t,10)}
+      const v=Number(t);if(isNaN(v))throw new P.RTE(106);return v;
+    }
+  },
+  async readln(){if(inp.buf===null)await fetchLine();inp.buf=null},
+  readKey:()=>nextKey(),
+  keyPressed:()=>keyq.length>0,
+  delay:ms=>new Promise(r=>setTimeout(r,Math.max(0,ms))),
+  clrscr:()=>screen.clrscr(),clreol:()=>screen.clreol(),gotoxy:(x,y)=>screen.gotoxy(x,y),
+  whereX:()=>screen.x-screen.win[0]+1,whereY:()=>screen.y-screen.win[1]+1,
+  textcolor:c=>screen.setFg(c),textbackground:c=>screen.setBg(c),
+  normvideo(){screen.fg=7;screen.blink=0},highvideo(){screen.fg|=8},lowvideo(){screen.fg&=7},
+  window:(a,b,c,d)=>screen.window(a,b,c,d),
+  sound(f){const c=audio();if(!c)return;try{if(osc)osc.stop();osc=c.createOscillator();const g=c.createGain();g.gain.value=.04;osc.type='square';osc.frequency.value=f;osc.connect(g);g.connect(c.destination);osc.start()}catch(e){}},
+  nosound(){try{if(osc)osc.stop()}catch(e){}osc=null},
+  getTime(h,m,s,c){const d=new Date();h.c[h.k]=d.getHours();m.c[m.k]=d.getMinutes();s.c[s.k]=d.getSeconds();c.c[c.k]=Math.floor(d.getMilliseconds()/10)},
+  getDate(y,m,d,w){const t=new Date();y.c[y.k]=t.getFullYear();m.c[m.k]=t.getMonth()+1;d.c[d.k]=t.getDate();w.c[w.k]=t.getDay()}
+};
+/* user screen overlay */
+function userVisible(){return userEl.style.display==='flex'}
+function showUser(fresh){
+  userEl.style.display='flex';closeMenu(false);sizeScreen();screen.rowDirty.fill(1);
+  setFoot();$('#kb').focus({preventScroll:true});
+}
+function leaveUser(){
+  userEl.style.display='none';ta.focus();
+  if(pendingErr){const e=pendingErr;pendingErr=null;showError((P.RTE_MSG[e.rte]||'Runtime error')+'',e.rte,e.line,1,true)}
+}
+let pendingErr=null;
+function setFoot(){
+  foot.innerHTML='';
+  if(running&&!dosMode){foot.append(el('span','','Program running — <b>Ctrl+C</b> stops it'));const b=el('button','','Stop');b.onclick=()=>vm&&vm.abort();foot.append(b)}
+  else if(!dosMode){foot.append(el('span','','<b>Press any key</b> to return to the IDE'));const b=el('button','','Back to IDE');b.onclick=leaveUser;foot.append(b)}
+  else foot.append(el('span','','MS-DOS prompt — type <b>BP</b> to start Pascal again'));
+}
+$('#uwrap').addEventListener('pointerdown',()=>$('#kb').focus());
+$('#kb').addEventListener('input',e=>{const v=e.target.value;e.target.value='';if(running||dosMode)for(const c of v)if(c.charCodeAt(0)>=32)pushKey(c)});
+async function runProgram(){
+  if(running)return;
+  const prog=compileSrc();if(!prog)return;
+  keyq.length=0;waiters=[];inp.buf=null;screen.reset();screen.clrscr();
+  lastRan=true;running=true;dosMode=false;pendingErr=null;
+  vm=new P.VM(prog,host);showUser(true);
+  let res;
+  try{res=await vm.exec(tick)}catch(e){res={rte:216,line:0}}
+  running=false;host.nosound();
+  if(res.rte){
+    const hex=(res.line*16).toString(16).toUpperCase().padStart(4,'0');
+    screen.write('\r\nRuntime error '+res.rte+' at 0001:'+hex+'.\r\n');
+    pendingErr=res;
+  }
+  vm=null;setFoot();
+}
+async function dosShell(){
+  if(running)return;
+  dosMode=true;keyq.length=0;waiters=[];screen.reset();screen.fg=7;
+  showUser(true);
+  screen.write('\r\nBorland Pascal browser edition.\r\nThe IDE has been closed.\r\n\r\n');
+  for(;;){
+    screen.write('C:\\BP\\BIN>');
+    const cmd=(await fetchLine()).trim().toLowerCase();
+    if(cmd==='bp'||cmd==='bp.exe'||cmd==='turbo'){break}
+    else if(cmd==='cls')screen.clrscr();
+    else if(cmd==='ver')screen.write('\r\nBorland Pascal 7.0 (clone) \r\n\r\n');
+    else if(cmd==='dir'){screen.write('\r\n Volume in drive C is BORLAND\r\n Directory of C:\\BP\\BIN\r\n\r\n');const f=fileList(true);f.forEach(x=>screen.write(' '+x.n.padEnd(14)+String(x.size).padStart(8)+'\r\n'));screen.write('        '+f.length+' file(s)\r\n\r\n')}
+    else if(cmd==='help')screen.write('\r\nCommands: BP, DIR, VER, CLS, HELP\r\n\r\n');
+    else if(cmd)screen.write('Bad command or file name\r\n');
+  }
+  dosMode=false;leaveUser();
+}
+
+/* ============ global keys ============ */
+window.addEventListener('keydown',e=>{
+  if(dlgDepth>0)return;
+  if(userVisible()){
+    if(e.key==='Unidentified'||e.isComposing||e.keyCode===229)return;
+    if(['Shift','Control','Alt','Meta','CapsLock'].includes(e.key))return;
+    if(!running&&!dosMode){e.preventDefault();leaveUser();return}
+    if((e.ctrlKey&&(e.key==='c'||e.key==='C'))||e.key==='Pause'){e.preventDefault();if(vm)vm.abort();return}
+    const ch=keyChars(e);if(ch){e.preventDefault();ch.forEach(pushKey)}
+    return;
+  }
+  if(lastErr){if(['Shift','Control','Alt','Meta'].includes(e.key))return;hideError();if(e.key==='Escape'||e.key==='Enter'){e.preventDefault();return}}
+  if(menu){
+    const k=e.key,n=MENUS.length;
+    if(k==='Escape'||k==='F10'){e.preventDefault();closeMenu();return}
+    if(k==='ArrowLeft'){e.preventDefault();openMenu((menu.i+n-1)%n);return}
+    if(k==='ArrowRight'){e.preventDefault();openMenu((menu.i+1)%n);return}
+    if(k==='ArrowDown'){e.preventDefault();stepSel(1);return}
+    if(k==='ArrowUp'){e.preventDefault();stepSel(-1);return}
+    if(k==='Enter'){e.preventDefault();if(menu.sel>=0)activate(menu.sel);return}
+    if(k.length===1&&!e.ctrlKey){
+      const lc=k.toLowerCase(),idx=MENUS[menu.i].items.findIndex(it=>it&&!it.off&&hkOf(it.l)===lc);
+      if(idx>=0){e.preventDefault();activate(idx)}
+    }
+    return;
+  }
+  const k=e.key,F=/^F\d+$/.test(k)?+k.slice(1):0;
+  if(e.altKey&&!e.ctrlKey){
+    if(k==='x'||k==='X'){e.preventDefault();ACT.exit();return}
+    if(F===9){e.preventDefault();ACT.compile();return}
+    if(F===5){e.preventDefault();ACT.usr();return}
+    if(F===3){e.preventDefault();ACT.new();return}
+    if(k.length===1){const i=MENUS.findIndex(m=>hkOf(m.n)===k.toLowerCase());if(i>=0){e.preventDefault();openMenu(i);return}}
+    return;
+  }
+  if(e.ctrlKey&&!e.altKey){
+    if(F===9){e.preventDefault();ACT.run();return}
+    if(F===2){e.preventDefault();ACT.reset();return}
+    const lk=k.toLowerCase();
+    if(lk==='s'){e.preventDefault();ACT.save();return}
+    if(lk==='f'){e.preventDefault();ACT.find();return}
+    if(lk==='l'){e.preventDefault();ACT.again();return}
+    if(lk==='g'){e.preventDefault();ACT.goto();return}
+    return;
+  }
+  if(F){
+    const m={1:'help',2:'save',3:'open',9:'make'}[F];
+    if(m){e.preventDefault();ACT[m]();return}
+    if(F===10){e.preventDefault();openMenu(1);return}
+    if(F===5||F===6||F===7||F===8||F===4){e.preventDefault()}
+  }
+});
+
+/* ============ start-up ============ */
+SAMPLES['HELLO.PAS']&&0;
+const saved=store.get('bp7.cur',null);
+measureRatio();layout();
+if(saved&&typeof saved.text==='string')setDoc(saved.name||'NONAME00.PAS',saved.text,saved.dirty);
+else setDoc('HELLO.PAS',SAMPLES['HELLO.PAS']||'',false);
+if(document.fonts&&document.fonts.load){document.fonts.load('20px VT323').then(()=>{measureRatio();layout();screen.rowDirty.fill(1)}).catch(()=>{})}
+window.addEventListener('resize',()=>{layout();render()});
+ta.focus();
+screen.write('');
+})();
+</script>
+</body>
+</html>
